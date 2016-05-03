@@ -1,0 +1,18 @@
+DELETE 
+DISTINCTROW TBL_PagamentosManual.*, 
+TBL_Pagamentos.ST, 
+CDate(Format([PrevPgto],
+"00\/00\/0000")) AS Expr1
+
+FROM 
+TBL_PagamentosManual 
+  LEFT JOIN TBL_Pagamentos 
+  ON (TBL_PagamentosManual.mesCompet = TBL_Pagamentos.MesCompet) 
+  AND (TBL_PagamentosManual.anoCompet = TBL_Pagamentos.AnoCompet) 
+  AND (TBL_PagamentosManual.Compromisso = TBL_Pagamentos.Compromisso) 
+  AND (TBL_PagamentosManual.valor = TBL_Pagamentos.Valor) 
+  AND (TBL_PagamentosManual.PrevPgto = TBL_Pagamentos.PrevPagto)
+
+WHERE 
+((Not (TBL_Pagamentos.ST) Is Null)) OR (((TBL_Pagamentos.ST) Is Null) 
+AND ((CDate(Format([PrevPgto],"00\/00\/0000")))<=CDate(Left(Now(),10))));
