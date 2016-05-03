@@ -1,0 +1,34 @@
+SELECT 
+QRY_Passagem.NomeContrato, 
+QRY_Passagem.CodContratos, 
+[SomaDeValorGlobal]+[SomaDeValorAdit] AS GlobalTotal, 
+[MáxDeSomaDeValorTotal0]+[MáxDeSomaDeValorTotal1]+[MáxDeSomaDeValorTotal2]+[MáxDeSomaDeValorTotal3] AS PgtoTotal, 
+[GlobalTotal]-[PgtoTotal] AS SaldoTotal
+
+FROM 
+(
+  SELECT 
+  TBL_Contratos.CodContratos, 
+  TBL_Contratos.NomeContrato, 
+  Sum(QRY_VlrGlobalGeral.ValorGlobal) AS SomaDeValorGlobal, 
+  Sum(QRY_VlrGlobalGeral.ValorAdit) AS SomaDeValorAdit, 
+  Max([QRY__PagamentoPorContrato].SomaDeValorTotal0) AS MáxDeSomaDeValorTotal0, 
+  Max([QRY__PagamentoPorContrato].SomaDeValorTotal1) AS MáxDeSomaDeValorTotal1, 
+  Max([QRY__PagamentoPorContrato].SomaDeValorTotal2) AS MáxDeSomaDeValorTotal2, 
+  Max([QRY__PagamentoPorContrato].SomaDeValorTotal3) AS MáxDeSomaDeValorTotal3, 
+  Max([QRY__PagamentoPorContrato].SomaDeValorTotal4) AS MáxDeSomaDeValorTotal4, 
+  Max([QRY__PagamentoPorContrato].SomaDeValorTotal5) AS MáxDeSomaDeValorTotal5, 
+  Max([QRY__PagamentoPorContrato].SomaDeValorTotal6) AS MáxDeSomaDeValorTotal6, 
+  Max([QRY__PagamentoPorContrato].SomaDeValorTotal7) AS MáxDeSomaDeValorTotal7, 
+  Max([QRY__PagamentoPorContrato].SomaDeValorTotal8) AS MáxDeSomaDeValorTotal8 
+  
+  FROM 
+  QRY_VlrGlobalGeral 
+  INNER JOIN (QRY__PagamentoPorContrato 
+  INNER JOIN TBL_Contratos ON [QRY__PagamentoPorContrato].CodContratos=TBL_Contratos.CodContratos) 
+  ON QRY_VlrGlobalGeral.CodContratos = TBL_Contratos.CodContratos 
+  
+  GROUP BY 
+  TBL_Contratos.CodContratos, 
+  TBL_Contratos.NomeContrato
+)  AS QRY_Passagem;
