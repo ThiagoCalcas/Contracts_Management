@@ -1,0 +1,261 @@
+/* Esta query é utilizada nos Formulários C23 a C210 e faz parte da QRY__PagamentoPorContrato */
+
+SELECT 
+CodContratos, 
+Evento,
+Compromisso, 
+Valor, 
+[MesCompet], 
+[AnoCompet], 
+PrevPagto,
+NumeroProrrogacao, 
+MáxDeNumeroProrr,
+ProrrDataInicio, 
+ProrrDataFim, 
+
+/* Se a competência do pagamento for igual ao MM/AAAA do início da prorrogação E não for Prorrogação=0, considera o Valor da Parcela vezes os dias dividito por 30 */
+/* Se a competência do pagamento for igual ao MM/AAAA do fim da prorrogação E não for última Prorrogação, considera o Valor da Parcela vezes os dias dividito por 30 */
+/* Repete isso pelas Prorrogações 0 a 8 */
+
+CAST((	CASE 	WHEN (DATEPART(year,[ProrrDataFim])*100+DATEPART(mm,[ProrrDataFim])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=[MáxDeNumeroProrr] THEN ValorParcela0 ELSE 
+				CAST(CASE 	WHEN DATEPART(dd,[ProrrDataFim]) = 31 THEN 30 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 28 END 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 29 END 
+						ELSE DATEPART(dd,[ProrrDataFim]) END
+				AS FLOAT)*ValorParcela0/30 END
+		WHEN (DATEPART(year,[ProrrDataInicio])*100+DATEPART(mm,[ProrrDataInicio])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=0 THEN ValorParcela0 
+				ELSE (CAST((31-CASE 	WHEN DATEPART(dd,[ProrrDataInicio]) = 31 THEN 30 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 28 END 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 29 END 
+							ELSE DATEPART(dd,[ProrrDataInicio]) END
+				)as float)/30)*ValorParcela0 END
+		ELSE ValorParcela0 END
+) AS MONEY) AS ValorParcela0,
+
+CAST((	CASE 	WHEN (DATEPART(year,[ProrrDataFim])*100+DATEPART(mm,[ProrrDataFim])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=[MáxDeNumeroProrr] THEN ValorParcela1 ELSE 
+				CAST(CASE 	WHEN DATEPART(dd,[ProrrDataFim]) = 31 THEN 30 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 28 END 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 29 END 
+						ELSE DATEPART(dd,[ProrrDataFim]) END
+				AS FLOAT)*ValorParcela1/30 END
+		WHEN (DATEPART(year,[ProrrDataInicio])*100+DATEPART(mm,[ProrrDataInicio])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=0 THEN ValorParcela1 
+				ELSE (CAST((31-CASE 	WHEN DATEPART(dd,[ProrrDataInicio]) = 31 THEN 30 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 28 END 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 29 END 
+							ELSE DATEPART(dd,[ProrrDataInicio]) END
+				)as float)/30)*ValorParcela1 END
+		ELSE ValorParcela1 END
+) AS MONEY) AS ValorParcela1,
+
+CAST((	CASE 	WHEN (DATEPART(year,[ProrrDataFim])*100+DATEPART(mm,[ProrrDataFim])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=[MáxDeNumeroProrr] THEN ValorParcela2 ELSE 
+				CAST(CASE 	WHEN DATEPART(dd,[ProrrDataFim]) = 31 THEN 30 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 28 END 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 29 END 
+						ELSE DATEPART(dd,[ProrrDataFim]) END
+				AS FLOAT)*ValorParcela2/30 END
+		WHEN (DATEPART(year,[ProrrDataInicio])*100+DATEPART(mm,[ProrrDataInicio])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=0 THEN ValorParcela2 
+				ELSE (CAST((31-CASE 	WHEN DATEPART(dd,[ProrrDataInicio]) = 31 THEN 30 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 28 END 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 29 END 
+							ELSE DATEPART(dd,[ProrrDataInicio]) END
+				)as float)/30)*ValorParcela2 END
+		ELSE ValorParcela2 END
+) AS MONEY) AS ValorParcela2,
+
+CAST((	CASE 	WHEN (DATEPART(year,[ProrrDataFim])*100+DATEPART(mm,[ProrrDataFim])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=[MáxDeNumeroProrr] THEN ValorParcela3 ELSE 
+				CAST(CASE 	WHEN DATEPART(dd,[ProrrDataFim]) = 31 THEN 30 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 28 END 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 29 END 
+						ELSE DATEPART(dd,[ProrrDataFim]) END
+				AS FLOAT)*ValorParcela3/30 END
+		WHEN (DATEPART(year,[ProrrDataInicio])*100+DATEPART(mm,[ProrrDataInicio])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=0 THEN ValorParcela3 
+				ELSE (CAST((31-CASE 	WHEN DATEPART(dd,[ProrrDataInicio]) = 31 THEN 30 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 28 END 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 29 END 
+							ELSE DATEPART(dd,[ProrrDataInicio]) END
+				)as float)/30)*ValorParcela3 END
+		ELSE ValorParcela3 END
+) AS MONEY) AS ValorParcela3,
+
+CAST((	CASE 	WHEN (DATEPART(year,[ProrrDataFim])*100+DATEPART(mm,[ProrrDataFim])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=[MáxDeNumeroProrr] THEN ValorParcela4 ELSE 
+				CAST(CASE 	WHEN DATEPART(dd,[ProrrDataFim]) = 31 THEN 30 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 28 END 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 29 END 
+						ELSE DATEPART(dd,[ProrrDataFim]) END
+				AS FLOAT)*ValorParcela4/30 END
+		WHEN (DATEPART(year,[ProrrDataInicio])*100+DATEPART(mm,[ProrrDataInicio])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=0 THEN ValorParcela4 
+				ELSE (CAST((31-CASE 	WHEN DATEPART(dd,[ProrrDataInicio]) = 31 THEN 30 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 28 END 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 29 END 
+							ELSE DATEPART(dd,[ProrrDataInicio]) END
+				)as float)/30)*ValorParcela4 END
+		ELSE ValorParcela4 END
+) AS MONEY) AS ValorParcela4,
+
+CAST((	CASE 	WHEN (DATEPART(year,[ProrrDataFim])*100+DATEPART(mm,[ProrrDataFim])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=[MáxDeNumeroProrr] THEN ValorParcela5 ELSE 
+				CAST(CASE 	WHEN DATEPART(dd,[ProrrDataFim]) = 31 THEN 30 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 28 END 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 29 END 
+						ELSE DATEPART(dd,[ProrrDataFim]) END
+				AS FLOAT)*ValorParcela5/30 END
+		WHEN (DATEPART(year,[ProrrDataInicio])*100+DATEPART(mm,[ProrrDataInicio])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=0 THEN ValorParcela5 
+				ELSE (CAST((31-CASE 	WHEN DATEPART(dd,[ProrrDataInicio]) = 31 THEN 30 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 28 END 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 29 END 
+							ELSE DATEPART(dd,[ProrrDataInicio]) END
+				)as float)/30)*ValorParcela5 END
+		ELSE ValorParcela5 END
+) AS MONEY) AS ValorParcela5,
+
+CAST((	CASE 	WHEN (DATEPART(year,[ProrrDataFim])*100+DATEPART(mm,[ProrrDataFim])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=[MáxDeNumeroProrr] THEN ValorParcela6 ELSE 
+				CAST(CASE 	WHEN DATEPART(dd,[ProrrDataFim]) = 31 THEN 30 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 28 END 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 29 END 
+						ELSE DATEPART(dd,[ProrrDataFim]) END
+				AS FLOAT)*ValorParcela6/30 END
+		WHEN (DATEPART(year,[ProrrDataInicio])*100+DATEPART(mm,[ProrrDataInicio])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=0 THEN ValorParcela6 
+				ELSE (CAST((31-CASE 	WHEN DATEPART(dd,[ProrrDataInicio]) = 31 THEN 30 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 28 END 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 29 END 
+							ELSE DATEPART(dd,[ProrrDataInicio]) END
+				)as float)/30)*ValorParcela6 END
+		ELSE ValorParcela6 END
+) AS MONEY) AS ValorParcela6,
+
+CAST((	CASE 	WHEN (DATEPART(year,[ProrrDataFim])*100+DATEPART(mm,[ProrrDataFim])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=[MáxDeNumeroProrr] THEN ValorParcela7 ELSE 
+				CAST(CASE 	WHEN DATEPART(dd,[ProrrDataFim]) = 31 THEN 30 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 28 END 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 29 END 
+						ELSE DATEPART(dd,[ProrrDataFim]) END
+				AS FLOAT)*ValorParcela7/30 END
+		WHEN (DATEPART(year,[ProrrDataInicio])*100+DATEPART(mm,[ProrrDataInicio])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=0 THEN ValorParcela7 
+				ELSE (CAST((31-CASE 	WHEN DATEPART(dd,[ProrrDataInicio]) = 31 THEN 30 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 28 END 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 29 END 
+							ELSE DATEPART(dd,[ProrrDataInicio]) END
+				)as float)/30)*ValorParcela7 END
+		ELSE ValorParcela7 END
+) AS MONEY) AS ValorParcela7,
+
+CAST((	CASE 	WHEN (DATEPART(year,[ProrrDataFim])*100+DATEPART(mm,[ProrrDataFim])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=[MáxDeNumeroProrr] THEN ValorParcela8 ELSE 
+				CAST(CASE 	WHEN DATEPART(dd,[ProrrDataFim]) = 31 THEN 30 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 28 END 
+						WHEN DATEPART(dd,[ProrrDataFim]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataFim]) = 2 THEN 30 ELSE 29 END 
+						ELSE DATEPART(dd,[ProrrDataFim]) END
+				AS FLOAT)*ValorParcela8/30 END
+		WHEN (DATEPART(year,[ProrrDataInicio])*100+DATEPART(mm,[ProrrDataInicio])) = ([AnoCompet]*100+[MesCompet]) THEN 
+			CASE 	WHEN [NumeroProrrogacao]=0 THEN ValorParcela8 
+				ELSE (CAST((31-CASE 	WHEN DATEPART(dd,[ProrrDataInicio]) = 31 THEN 30 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 28 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 28 END 
+							WHEN DATEPART(dd,[ProrrDataInicio]) = 29 THEN CASE WHEN DATEPART(mm,[ProrrDataInicio]) = 2 THEN 30 ELSE 29 END 
+							ELSE DATEPART(dd,[ProrrDataInicio]) END
+				)as float)/30)*ValorParcela8 END
+		ELSE ValorParcela8 END
+) AS MONEY) AS ValorParcela8
+
+
+FROM (
+
+SELECT 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.Compromisso, 
+TBL_Pagamentos.Valor, 
+TBL_Pagamentos.Evento, 
+TBL_Pagamentos.[MesCompet], 
+TBL_Pagamentos.[AnoCompet], 
+TBL_Pagamentos.PrevPagto,
+TBL_Prorrogacoes.NumeroProrrogacao, 
+MáxDeNumeroProrr,
+TBL_Prorrogacoes.ProrrDataInicio, 
+TBL_Prorrogacoes.ProrrDataFim, 
+
+/* Separa os pagamentos pelas Prorrogações, considerando apenas o mês/ano */
+/* A ideia é que os meses de transição fiquem SIM duplicados. A proxima etapa (acima) faz a proporcionalidade do valor pela quantidade de dias de cada mês */
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet])<= 
+(CASE WHEN [NumeroProrrogacao]=0 THEN DATEPART( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ELSE 0 END) 
+THEN CASE WHEN ([AnoCompet]*100+[MesCompet])>=
+(CASE WHEN [NumeroProrrogacao]=0 THEN DATEPART( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ELSE 0 END) 
+THEN CASE WHEN [Valor]>0 THEN [Valor] ELSE 0 END ELSE 0 END ELSE 0 END) AS ValorParcela0, 
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet])< =
+(CASE WHEN [NumeroProrrogacao]=1 THEN DATEPART( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ELSE 0 END) 
+THEN CASE WHEN ([AnoCompet]*100+[MesCompet])>=
+(CASE WHEN [NumeroProrrogacao]=1 THEN DATEPART( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ELSE 0 END) 
+THEN CASE WHEN [Valor]>0 THEN [Valor] ELSE 0 END ELSE 0 END ELSE 0 END) AS ValorParcela1, 
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet])< =
+(CASE WHEN [NumeroProrrogacao]=2 THEN DATEPART( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ELSE 0 END) 
+THEN CASE WHEN ([AnoCompet]*100+[MesCompet])>=
+(CASE WHEN [NumeroProrrogacao]=2 THEN DATEPART( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ELSE 0 END) 
+THEN CASE WHEN [Valor]>0 THEN [Valor] ELSE 0 END ELSE 0 END ELSE 0 END) AS ValorParcela2, 
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet])< =
+(CASE WHEN [NumeroProrrogacao]=3 THEN DATEPART( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ELSE 0 END) 
+THEN CASE WHEN ([AnoCompet]*100+[MesCompet])>=
+(CASE WHEN [NumeroProrrogacao]=3 THEN DATEPART( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ELSE 0 END) 
+THEN CASE WHEN [Valor]>0 THEN [Valor] ELSE 0 END ELSE 0 END ELSE 0 END) AS ValorParcela3, 
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet])< =
+(CASE WHEN [NumeroProrrogacao]=4 THEN DATEPART( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ELSE 0 END) 
+THEN CASE WHEN ([AnoCompet]*100+[MesCompet])>=
+(CASE WHEN [NumeroProrrogacao]=4 THEN DATEPART( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ELSE 0 END) 
+THEN CASE WHEN [Valor]>0 THEN [Valor] ELSE 0 END ELSE 0 END ELSE 0 END) AS ValorParcela4, 
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet])< =
+(CASE WHEN [NumeroProrrogacao]=5 THEN DATEPART( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ELSE 0 END) 
+THEN CASE WHEN ([AnoCompet]*100+[MesCompet])>=
+(CASE WHEN [NumeroProrrogacao]=5 THEN DATEPART( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ELSE 0 END) 
+THEN CASE WHEN [Valor]>0 THEN [Valor] ELSE 0 END ELSE 0 END ELSE 0 END) AS ValorParcela5, 
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet])< =
+(CASE WHEN [NumeroProrrogacao]=6 THEN DATEPART( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ELSE 0 END) 
+THEN CASE WHEN ([AnoCompet]*100+[MesCompet])>=
+(CASE WHEN [NumeroProrrogacao]=6 THEN DATEPART( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ELSE 0 END) 
+THEN CASE WHEN [Valor]>0 THEN [Valor] ELSE 0 END ELSE 0 END ELSE 0 END) AS ValorParcela6, 
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet])< =
+(CASE WHEN [NumeroProrrogacao]=7 THEN DATEPART( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ELSE 0 END) 
+THEN CASE WHEN ([AnoCompet]*100+[MesCompet])>=
+(CASE WHEN [NumeroProrrogacao]=7 THEN DATEPART( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ELSE 0 END) 
+THEN CASE WHEN [Valor]>0 THEN [Valor] ELSE 0 END ELSE 0 END ELSE 0 END) AS ValorParcela7, 
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet])< =
+(CASE WHEN [NumeroProrrogacao]=8 THEN DATEPART( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ELSE 0 END) 
+THEN CASE WHEN ([AnoCompet]*100+[MesCompet])>=
+(CASE WHEN [NumeroProrrogacao]=8 THEN DATEPART( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ELSE 0 END) 
+THEN CASE WHEN [Valor]>0 THEN [Valor] ELSE 0 END ELSE 0 END ELSE 0 END) AS ValorParcela8 
+
+FROM ((TBL_Contratos INNER JOIN TBL_Prorrogacoes ON TBL_Contratos.CodContratos = TBL_Prorrogacoes.CodContratos) LEFT JOIN TBL_Pagamentos ON TBL_Contratos.Compromisso = TBL_Pagamentos.Compromisso) INNER JOIN 
+(
+SELECT 
+TBL_Contratos.NomeContrato, 
+TBL_Contratos.CodContratos, 
+Max(TBL_Prorrogacoes.NumeroProrrogacao) AS MáxDeNumeroProrr
+
+FROM 
+TBL_Contratos INNER JOIN TBL_Prorrogacoes ON TBL_Contratos.CodContratos = TBL_Prorrogacoes.CodContratos
+
+GROUP BY TBL_Contratos.NomeContrato, TBL_Contratos.CodContratos
+) AS QRY_UltimaRepact ON TBL_Contratos.CodContratos = QRY_UltimaRepact.CodContratos
+
+)  AS QRY_PagamentoPorContrato1
+
+;
