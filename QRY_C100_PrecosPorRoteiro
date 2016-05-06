@@ -1,0 +1,47 @@
+/* 
+Esta Query é utilizada no FRM_Consultas_10_0Precos para servir como base nas querys geradas pelo VBA para apresentar os preços em tela, conforme
+solicitado pelo usuário nos filtros 
+*/
+
+SELECT 
+TBL_Contratos.NomeContrato, 
+TBL_Contratos.CodContratos, 
+TBL_EGTTV.NomeEGTTV, 
+TBL_Contratos.UF, 
+TBL_Roteiros.CodRoteiros, 
+TBL_Roteiros.[Municipio / Roteiro], 
+TBL_Contratos.Tipo, 
+TBL_Precos.Orcamento, 
+TBL_Precos.Rotineiro, 
+TBL_Precos.Eventual, 
+TBL_Precos.Especial, 
+TBL_Precos.Conjugado, 
+TBL_Precos.TratCedulas, 
+TBL_Precos.TratMoedas, 
+TBL_Precos.AdValoremBB, 
+TBL_Precos.AdValoremOutros, 
+TBL_Precos.Custodia, 
+TBL_Repactuacoes.NumeroRepact, 
+TBL_Precos.RotineiroMultiplo, 
+TBL_Precos.EventualMultiplo, 
+TBL_Precos.EspecialMultiplo, 
+TBL_Precos.AcionEveSimples, 
+TBL_Precos.AcionEspSimples, 
+TBL_Precos.AcionComplementarSimples, 
+TBL_Precos.AcionEveMultiplo, 
+TBL_Precos.AcionEspMultiplo, 
+TBL_Precos.AcionComplementarMultiplo, 
+TBL_Precos.CarroDedicado, 
+TBL_Precos.MotoDedicada,
+TBL_Roteiros.KM, 
+CASE WHEN KM = 0 THEN 0 ELSE Rotineiro / KM END AS RotineiroPorKM,
+CASE WHEN KM = 0 THEN 0 ELSE Eventual / KM END AS EventualPorKM,
+CASE WHEN KM = 0 THEN 0 ELSE Especial / KM END AS EspecialPorKM,
+TBL_Bases.NomeBase
+
+FROM 
+TBL_Bases INNER JOIN ((TBL_EGTTV INNER JOIN (TBL_Contratos INNER JOIN (TBL_Roteiros INNER JOIN TBL_Precos ON TBL_Roteiros.CodRoteiros = TBL_Precos.CodRoteiros) ON TBL_Contratos.CodContratos = TBL_Roteiros.CodContratos) ON TBL_EGTTV.CodEGTTV = TBL_Contratos.CodEGTTV) INNER JOIN TBL_Repactuacoes ON (TBL_Repactuacoes.CodRepactuacoes = TBL_Precos.CodRepactuacoes) AND (TBL_Contratos.CodContratos = TBL_Repactuacoes.CodContratos)) ON TBL_Bases.CodBases = TBL_Roteiros.CodBases
+
+WHERE (((TBL_Contratos.Situacao)='Ativo'))
+
+ORDER BY TBL_Roteiros.[Municipio / Roteiro];
