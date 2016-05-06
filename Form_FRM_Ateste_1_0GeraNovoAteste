@@ -1,0 +1,683 @@
+Option Compare Database
+
+Private Sub Form_Load()
+'Verifica o nível de acesso do usuário
+TpAcesso = VerificaAcesso()
+If TpAcesso = "OcultaTudo" Or TpAcesso = "GILOG - Pagamentos" Or _
+    TpAcesso = "GEOCE" Then
+    DoCmd.Close
+    Exit Sub
+End If
+'Limpa a TBL temporária de NFs (usada para criar a lst_NF no meio deste FRM)
+Dim txtSQL As String
+txtSQL = "DELETE TBL_NF_Temp.* FROM TBL_NF_Temp;"
+CurrentDb.Execute txtSQL
+
+'pega a info da Versão do MO 19088
+    'Variáveis que referem ao Excel e Objects
+    Dim CaminhoExcel As String
+    Dim Xl As Excel.Application
+    Dim XlBook As Excel.Workbook
+    Dim XlSheet As Excel.Worksheet
+     
+    'Nome do caminho para o arquivo
+    CaminhoExcel = "\\sp0000sr028\Public\7854\cetes\EQUIPE CONTRATOS\GESTÃO DE PAGAMENTOS\Arquivos Access\MO19088.xlsm"
+    
+    'Abre o Excel
+    Set Xl = CreateObject("Excel.Application")
+    Set XlBook = GetObject(CaminhoExcel)
+     
+    'Deixa o Excel visível
+    Xl.Visible = False
+    
+    'Define a guia que será consultada
+    Set XlSheet = XlBook.Worksheets("Ateste")
+
+    Dim versao As String, i As Integer, j As Integer
+    versao = XlSheet.Range("A116")
+    For i = 1 To Len(versao)
+        If Mid(versao, i, 1) = " " Then
+            For j = i + 1 To Len(versao)
+                If Mid(versao, j, 1) = " " Then
+                    versao = Mid(versao, i + 1, j - i - 1)
+                    Me.versao.Value = versao
+                    Exit For
+                End If
+            Next
+            Exit For
+        End If
+    Next
+    
+    'Fecha o Excel
+    XlBook.Close SaveChanges:=False
+    Set Xl = Nothing
+    Set XlBook = Nothing
+    Set XlSheet = Nothing
+    
+    
+End Sub
+
+Private Sub cbo_Contrato_Click()
+Call ArrumaInfosContrato
+End Sub
+
+Private Sub cbo_UF_Click()
+Me.cbo_UF.Requery
+Me.cbo_Tipo = Clear
+Me.cbo_Tipo.Requery
+Me.cbo_Contrato = Clear
+Me.cbo_Contrato.Requery
+Me.Fornecedor.Value = Clear
+Me.NumeroProcesso.Value = Clear
+Me.CNPJ.Value = Clear
+Me.NumCompromisso.Value = Clear
+Me.NumBanco.Value = Clear
+Me.NumAgencia.Value = Clear
+Me.NumOperacao.Value = Clear
+Me.NumContaCorrente.Value = Clear
+Me.DescricaoObj.Value = Clear
+Me.VencimentoDoContrato.Value = Clear
+
+End Sub
+
+Private Sub cbo_Tipo_Click()
+'Limpa e atualiza os outros campos
+Me.cbo_Tipo.Requery
+Me.cbo_Contrato.RowSource = "SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, format(siges, '000000/0000') as [N Contrato], format(Compromisso, '000000/0000-AA') as Compr FROM TBL_Contratos WHERE (((TBL_Contratos.Tipo)=[Formulários]![FRM_Ateste_1_0GerarNovoAteste]![cbo_Tipo]) AND ((TBL_Contratos.UF)=[Formulários]![FRM_Ateste_1_0GerarNovoAteste]![cbo_UF]) AND ((TBL_Contratos.Situacao)='Ativo'));"
+Me.cbo_Contrato = ""
+Me.cbo_Contrato.Requery
+Me.Fornecedor.Value = Clear
+Me.NumeroProcesso.Value = Clear
+Me.CNPJ.Value = Clear
+Me.NumCompromisso.Value = Clear
+Me.NumBanco.Value = Clear
+Me.NumAgencia.Value = Clear
+Me.NumOperacao.Value = Clear
+Me.NumContaCorrente.Value = Clear
+Me.DescricaoObj.Value = Clear
+Me.VencimentoDoContrato.Value = Clear
+End Sub
+
+Private Sub cmd_GerarAteste_Click()
+'gera o ateste
+'verifica se os campos estão preenchidos e preenche a
+'TBL_NumAteste com as infos deste Form
+'e a TBL_NF com as infos da TBL_NF_Temp (local)
+
+'On Error GoTo SairComErro
+
+'Verifica se tem saldo!
+If Me.ValorPgto.Value > Me.SaldoContrato.Value Then
+     If MsgBox("Erro: Não há saldo suficiente para o pagamento dessa parcela." & Chr(13) & _
+            "Favor exluir NF que serão pagas em outro(s) compromisso(s) antes de gerar e imprimir o Ateste." & Chr(13) & _
+            "Saldo do Contrato: " & Format(Me.SaldoContrato.Value, "currency") & Chr(13) & _
+            "Valor atual do Ateste: " & Format(Me.ValorPgto.Value, "currency") & Chr(13) & Chr(13) & _
+            "Se já falou com a equipe de Contratos e deseja gerar e imprimir o ateste, clique em OK.", vbOKCancel, "Atenção") = 2 Then Exit Sub
+End If
+
+Dim Campo As String
+For i = 1 To 8
+    If i = 1 Then Campo = "cbo_Contrato"
+    If i = 2 Then Campo = "NumCompromisso"
+    If i = 3 Then Campo = "RecebimentoNF"
+    If i = 4 Then Campo = "CompetenciaServico"
+    If i = 5 Then Campo = "DataPrevPgto"
+    If i = 6 Then Campo = "ValorPgto"
+    If i = 7 Then Campo = "AnoCompetencia"
+    If i = 8 Then Campo = "MesCompetencia"
+    
+    If IsNull(Me.Controls(Campo).Value) = True Then GoTo SairComNull
+    If Me.Controls(Campo).Value = "" Then GoTo SairComNull
+Next
+
+If Me.ValorPgto.Value = 0 Then GoTo SairComNull
+
+Continuar = MsgBox("Deseja gerar ateste no valor de " & Format(Me.ValorPgto.Value, "currency") & " e " & Chr(13) & "previsão de pagamento em " & Me.DataPrevPgto.Value & "?", 4, "Atenção")
+If Continuar = 7 Then Exit Sub
+
+'Pega as infos do FORM
+CodContratos = Me.cbo_Contrato.Value
+NomeEGTTV = Me.Fornecedor.Value
+NumCNPJ = CStr(Left(Me.CNPJ.Value, 2) & "." & Mid(Me.CNPJ.Value, 3, 3) & "." & Mid(Me.CNPJ.Value, 6, 3) & "/" & Mid(Me.CNPJ.Value, 9, 4) & "-" & _
+    Right(Me.CNPJ.Value, 2))
+Processo = CStr(Left(Me.NumeroProcesso.Value, 4) & "." & Mid(Me.NumeroProcesso.Value, 5, 2) & "." & Mid(Me.NumeroProcesso.Value, 7, 4) & _
+    "." & Mid(Me.NumeroProcesso.Value, 11, 2) & "/" & Right(Me.NumeroProcesso.Value, 4))
+NumBanco = Me.NumBanco.Value
+NumAgencia = Me.NumAgencia.Value
+NumOperacao = Me.NumOperacao.Value
+NumContaCorrente = Me.NumContaCorrente.Value
+DataPgto = Format(Me.DataPrevPgto.Value, "dd/mm/yyyy")
+DescricaoObj = Me.DescricaoObj.Value
+RecebimentoNF = Format(Me.RecebimentoNF.Value, "dd/mm/yyyy")
+CompetenciaServico = Me.CompetenciaServico.Value
+Repactuacao = Me.cmdRepactuacao.Value
+NumCompromisso = Me.NumCompromisso.Value
+ValorMulta = Me.ValorMulta.Value
+ValorGlosa = Me.ValorGlosa.Value
+ValorRetencao = Me.ValorRetencao.Value
+TipoRetencao = Me.TipoRetencao.Value
+EventoRetencao = Me.EventoRetencao.Value
+MotivoMultaRetencao = Me.MotivoMultaRetencao.Value
+Observacao = Me.Observacao.Value
+ValorTotal = Me.ValorPgto.Value
+AnoCompet = Me.AnoCompetencia.Value
+MesCompet = Me.MesCompetencia.Value
+
+Matricula = Environ("USERNAME") 'Identifica o usuário que está mexendo no Access
+DiaHoraRegistro = Now() 'Pega a data e hora do Registro
+
+'Codigo do Pedro de geração de numeração de Ateste
+
+    Dim rst           As Recordset
+    Dim rst2           As Recordset
+    Dim ANO           As Integer
+    Dim novoNumero    As Integer
+    
+    ANO = Year(Date)
+    
+    
+    Set rst = CurrentDb.OpenRecordset("SELECT Max(NumAteste) as maxNumAteste FROM TBL_Atestes WHERE AnoAteste=" & ANO & ";")
+    
+    If IsNull(rst!maxNumAteste) Then
+        novoNumero = 1
+    Else
+        novoNumero = rst!maxNumAteste + 1
+    End If
+    
+    Set rst = Nothing
+
+'Preenche o Excel com as informações do Ateste para preparar para impressão
+    'Variáveis que referem ao Excel e Objects
+    Dim CaminhoExcel As String
+    Dim Xl As Excel.Application
+    Dim XlBook As Excel.Workbook
+    Dim XlSheet As Excel.Worksheet
+     
+    'Nome do caminho para o arquivo
+    CaminhoExcel = "\\sp0000sr028\Public\7854\cetes\EQUIPE CONTRATOS\GESTÃO DE PAGAMENTOS\Arquivos Access\MO19088.xlsm"
+    
+    'Abre o Excel
+    Set Xl = CreateObject("Excel.Application")
+    Set XlBook = GetObject(CaminhoExcel)
+     
+    'Deixa o Excel visível
+    Xl.Visible = False
+    'XlBook.Windows(2).Visible = True
+     
+    'Define a guia que será atualizada
+    Set XlSheet = XlBook.Worksheets("Ateste")
+     
+    'Começa o preenchimento do Ateste!
+    XlSheet.Range("J9") = novoNumero                                  'NumeroAteste
+    XlSheet.Range("L9") = ANO                                         'AnoAteste
+    XlSheet.Range("A27") = NomeEGTTV                                  'NomeEGTTV - CodContratos
+    XlSheet.Range("A30") = NumCNPJ                                    'CNPJ - CodContratos
+    XlSheet.Range("A36") = DescricaoObj                               'Objeto - CodContratos
+    XlSheet.Range("D52") = Processo                                   'NumeroProcesso - CodContratos
+    XlSheet.Range("S33") = CStr(Format(DataPgto, "dd/mm/yyyy"))       'DataPagamento
+    XlSheet.Range("K94") = Left(DiaHoraRegistro, 2)                  'DataRegistro
+    XlSheet.Range("N94") = Mes(Mid(DiaHoraRegistro, 4, 2))           'DataRegistro
+    XlSheet.Range("V94") = Mid(DiaHoraRegistro, 7, 4)                'DataRegistro
+    XlSheet.Range("C16") = CStr(Format(RecebimentoNF, "dd/mm/yyyy"))  'DataRecebimento
+    XlSheet.Range("J33") = CompetenciaServico                         'Competencia
+    XlSheet.Range("A39") = CStr(Left(NumCompromisso, 6))              'Compromisso
+    XlSheet.Range("D39") = Mid(NumCompromisso, 7, 4)                  'Compromisso
+    XlSheet.Range("G39") = Right(NumCompromisso, 2)                   'Compromisso
+    XlSheet.Range("A42") = ValorMulta                                 'ValorMulta
+    XlSheet.Range("N42") = ValorGlosa                                 'ValorGlosa
+    XlSheet.Range("A45") = ValorRetencao                              'ValorRetencao
+    XlSheet.Range("E45") = TipoRetencao                               'TipoRetencao
+    XlSheet.Range("I45") = EventoRetencao                             'EventoRetencao
+    XlSheet.Range("A48") = MotivoMultaRetencao                        'MotivoMultaRetencao
+    XlSheet.Range("A92") = Observacao                                'Observacao
+    XlSheet.Range("B33") = ValorTotal                                 'ValorPagamento
+    
+    If Me.cbo_TipoPgto.Value = "Crédito em Conta" Then
+        XlSheet.Range("A62") = "X"                                    'Crédito em Conta corrente bancária
+        XlSheet.Range("J62") = NumBanco                               'NumBanco - CodContratos
+        XlSheet.Range("N62") = NumAgencia                             'NumAgencia - CodContratos
+        XlSheet.Range("S62") = NumOperacao                            'NumOperacao - CodContratos
+        XlSheet.Range("X62") = NumContaCorrente                       'NumConta - CodContratos
+    Else
+        XlSheet.Range("A60") = "X"                                    'Boleto Bancário
+    End If
+'Preenche a TBL_Ateste
+    Set rst = CurrentDb.OpenRecordset("SELECT * FROM TBL_Atestes;")
+    
+    rst.AddNew
+    rst!NumAteste = novoNumero
+    rst!AnoAteste = ANO
+    rst!CodContratos = CodContratos
+    rst!DataPagamento = CDate(DataPgto)
+    rst!Matricula = Matricula
+    rst!DataRegistro = DiaHoraRegistro
+    rst!DataRecebimento = CDate(RecebimentoNF)
+    rst!Competencia = CompetenciaServico
+    rst!Compromisso = NumCompromisso
+    rst!ValorMulta = ValorMulta
+    rst!ValorGlosa = ValorGlosa
+    rst!ValorRetencao = ValorRetencao
+    rst!TipoRetencao = TipoRetencao
+    rst!EventoRetencao = EventoRetencao
+    rst!MotivoMultaRetencao = MotivoMultaRetencao
+    rst!Observacao = Observacao
+    rst!MesCompetPgto = MesCompet
+    rst!AnoCompetPgto = AnoCompet
+    rst!Repact = Repactuacao
+    rst.Update
+    
+    Set rst = Nothing
+    
+'preenche a TBL_NF com as infos da TBL_NF_Temp
+    Set rst = CurrentDb.OpenRecordset("SELECT * FROM TBL_NF;", dbOpenDynaset, dbFailOnError + dbSeeChanges)
+    Set rst2 = CurrentDb.OpenRecordset("SELECT * FROM TBL_NF_Temp ORDER BY TBL_NF_Temp.CNPJdaNF, TBL_NF_Temp.NumeroNF;", dbOpenDynaset, dbFailOnError + dbSeeChanges)
+    rst2.MoveFirst
+    Linha = 70
+    
+    Do While Not rst2.EOF
+        rst.AddNew
+        rst!NumAteste = novoNumero
+        rst!AnoAteste = ANO
+        rst!CNPJdaNF = rst2!CNPJdaNF
+        rst!TipoNF = rst2!TipoNF
+        rst!NumeroNF = rst2!NumeroNF
+        rst!SerieNF = rst2!SerieNF
+        rst!DataEmissaoNF = rst2!DataEmissaoNF
+        rst!ValorNF = rst2!ValorNF
+        rst!MunicipioServicoNF = rst2!MunicipioServicoNF
+        rst!ValorIsentoISSQN = rst2!ValorIsentoISSQN
+        rst!AliquotaNF = rst2!AliquotaNF
+        rst!Destino = rst2!Destino
+        rst!TipoServico = rst2!TipoServico
+        rst.Update
+               
+        'aproveita e preenche o ateste
+        XlSheet.Range("A" & Linha) = rst2!CNPJdaNF
+        XlSheet.Range("D" & Linha) = rst2!TipoNF
+        XlSheet.Range("F" & Linha) = rst2!NumeroNF
+        XlSheet.Range("H" & Linha) = rst2!SerieNF
+        XlSheet.Range("J" & Linha) = CStr(rst2!DataEmissaoNF)
+        XlSheet.Range("L" & Linha) = rst2!ValorNF
+        XlSheet.Range("O" & Linha) = rst2!MunicipioServicoNF
+        XlSheet.Range("R" & Linha) = rst2!ValorIsentoISSQN
+        XlSheet.Range("U" & Linha) = rst2!AliquotaNF
+        XlSheet.Range("X" & Linha) = rst2!Destino
+        Linha = Linha + 1
+        If Linha = 90 Then 'Mais linhas que o normal, deve ser enviado para a guia Ateste_40
+            Set XlSheet = XlBook.Worksheets("Ateste_40")
+        End If
+        
+        rst2.MoveNext
+    Loop
+    
+SairNormal:
+MsgBox ("Gerado o Ateste Nº. " & novoNumero & "/" & ANO & ".")
+
+    'Imprime e Fecha o Excel
+    XlSheet.PrintOut
+    If Linha < 90 Then 'Imprime a via de Protocolo do Ateste
+        Set XlSheet = XlBook.Worksheets("Protocolo_Ateste")
+    Else
+        Set XlSheet = XlBook.Worksheets("Protocolo_Ateste_40")
+    End If
+    XlSheet.PrintOut
+    XlBook.Close SaveChanges:=False
+    Set Xl = Nothing
+    Set XlBook = Nothing
+    Set XlSheet = Nothing
+
+'Insere o pagamento deste Ateste no FRM_Consultas_13_1PPC
+Set rst = CurrentDb.OpenRecordset("SELECT TBL_PagamentosManual.* FROM TBL_PagamentosManual;", dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.AddNew
+rst!Compromisso = NumCompromisso
+rst!MesCompet = MesCompet
+rst!AnoCompet = AnoCompet
+rst!PrevPgto = Left(CStr(DataPgto), 2) & Mid(CStr(DataPgto), 4, 2) & Right(CStr(DataPgto), 4)
+rst!Valor = ValorTotal
+rst.Update
+
+' apaga as infos temporárias de NF e fecha o FORM
+Dim txtSQL As String
+txtSQL = "DELETE TBL_NF_Temp.* FROM TBL_NF_Temp;"
+CurrentDb.Execute txtSQL
+DoCmd.Close
+
+Exit Sub
+
+SairComNull:
+MsgBox ("Erro: Ateste não gerado." & Chr(13) & "Favor preencher todos os campos.")
+Exit Sub
+
+SairComErro:
+MsgBox ("Erro.")
+Exit Sub
+
+End Sub
+
+Public Function EhFDS(Data As Date) As Boolean
+Select Case Weekday(Data)
+    Case vbSaturday, vbSunday
+        EhFDS = True
+    Case Else
+        EhFDS = False
+End Select
+End Function
+
+Private Sub cmd_InserirNF_Click()
+If IsNull(Me.cbo_Contrato) = True Then
+    MsgBox ("Favor selecionar um Contrato.")
+    Exit Sub
+End If
+DoCmd.OpenForm "FRM_Ateste_1_2InserirNF", acNormal, , , acFormEdit
+End Sub
+
+Private Sub cmd_ExcluirNF_Click()
+On Error GoTo SairComErro
+
+
+Dim txtSQL As String
+Dim rst As DAO.Recordset
+Dim db As DAO.Database
+
+txtSQL = "SELECT TBL_NF_Temp.* FROM TBL_NF_Temp;"
+Set db = CurrentDb
+Set rst = db.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+CodigoNF = CDbl(Me.lstNF.Value)
+
+Do While Not rst.EOF
+    If rst.Fields("CodNFTemp").Value = CodigoNF Then
+        Continuar = MsgBox("Deseja remover esta NF?" & Chr(13) & _
+            "Número: " & rst.Fields("NumeroNF").Value & Chr(13) & _
+            "Valor: " & Format(rst.Fields("ValorNF").Value, "currency") & Chr(13) & _
+            "Data de Emissão: " & rst.Fields("DataEmissaoNF").Value & _
+            "", 4, "Atenção")
+        If Continuar = 6 Then
+            rst.Delete
+            Me.Refresh
+            Call Atualiza_Valor
+            Me.ValorPgto.Requery
+            Exit Sub
+        End If
+    End If
+    rst.MoveNext
+Loop
+
+Call Atualiza_Valor
+Me.ValorPgto.Requery
+Exit Sub
+
+SairComErro:
+MsgBox ("Erro: Nota Fiscal não excluída.")
+End Sub
+
+Private Sub cmd_EditarNF_Click()
+If IsNull(Me.lstNF) = True Then
+    MsgBox ("Não existem Notas Fiscais para serem alteradas.")
+    Exit Sub
+End If
+DoCmd.OpenForm "FRM_Ateste_1_3EditarNF", acNormal, , , acFormEdit
+End Sub
+
+Private Sub Form_Activate()
+Call Atualiza_Valor
+End Sub
+
+Private Sub Atualiza_Valor()
+Me.Refresh
+Dim lItem As Double
+Dim Valor As Double
+Dim valorEfetivado As Double
+Dim valorGILOG As Double
+
+If ValorPgto = "" Then ValorPgto = 0
+
+valorEfetivado = 0
+valorGILOG = 0
+
+For lItem = 1 To lstNF.ListCount - 1
+    If lstNF.Column(6, lItem) = "" Then
+        Valor = 0
+    Else
+        Valor = lstNF.Column(6, lItem) * 1
+    End If
+    valorEfetivado = valorEfetivado + (Valor)
+Next
+
+ValorPgto = valorEfetivado
+End Sub
+
+Private Sub cmdSair_Click()
+Continuar = MsgBox("Deseja sair sem salvar?", 4, "Atenção")
+If Continuar = 6 Then
+    Dim txtSQL As String
+    txtSQL = "DELETE TBL_NF_Temp.* FROM TBL_NF_Temp;"
+    CurrentDb.Execute txtSQL
+    DoCmd.Close
+End If
+End Sub
+
+Private Sub cmdAtualizar_Click()
+Me.Refresh
+End Sub
+Private Function Mes(Valor)
+If Valor = 1 Then Mes = "Janeiro"
+If Valor = 2 Then Mes = "Fevereiro"
+If Valor = 3 Then Mes = "Março"
+If Valor = 4 Then Mes = "Abril"
+If Valor = 5 Then Mes = "Maio"
+If Valor = 6 Then Mes = "Junho"
+If Valor = 7 Then Mes = "Julho"
+If Valor = 8 Then Mes = "Agosto"
+If Valor = 9 Then Mes = "Setembro"
+If Valor = 10 Then Mes = "Outubro"
+If Valor = 11 Then Mes = "Novembro"
+If Valor = 12 Then Mes = "Dezembro"
+End Function
+Private Sub cbo_TipoPgto_Click()
+Call ArrumaInfosContrato
+End Sub
+
+Private Sub ArrumaInfosContrato()
+Dim rst As DAO.Recordset
+Dim db As DAO.Database
+
+Set db = CurrentDb
+Set rst = db.OpenRecordset("SELECT TBL_Contratos.*, TBL_EGTTV.NomeEGTTV AS NomEGTTV, DataFimContrato FROM " & _
+    "(TBL_Contratos INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV= TBL_EGTTV.CodEGTTV) " & _
+    "INNER JOIN QRY__TerminoDoContrato ON TBL_Contratos.CodContratos = QRY__TerminoDoContrato.CodContratos " & _
+    "WHERE TBL_Contratos.CodContratos = " & Me.cbo_Contrato.Value & ";", dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+Me.Fornecedor.Value = rst.Fields("NomEGTTV").Value
+Me.NumeroProcesso.Value = rst.Fields("Processo").Value
+Me.CNPJ.Value = rst.Fields("CNPJ").Value
+Me.NumCompromisso.Value = rst.Fields("Compromisso").Value
+If Me.cbo_TipoPgto.Value = "Crédito em Conta" Then Me.NumBanco.Value = rst.Fields("PgtoBanco").Value
+If Me.cbo_TipoPgto.Value = "Crédito em Conta" Then Me.NumAgencia.Value = rst.Fields("PgtoAgencia").Value
+If Me.cbo_TipoPgto.Value = "Crédito em Conta" Then Me.NumOperacao.Value = rst.Fields("PgtoOperacao").Value
+If Me.cbo_TipoPgto.Value = "Crédito em Conta" Then Me.NumContaCorrente.Value = rst.Fields("PgtoContaCorrente").Value
+Me.DescricaoObj.Value = rst.Fields("Objeto").Value
+Me.VencimentoDoContrato.Value = rst.Fields("DataFimContrato").Value
+
+'Pega estas infos para calcular, mais abaixo, a data de pagamento
+DiaRecebimento = rst.Fields("DiaRecebimento").Value
+DiaPagamento = rst.Fields("DiaPagamento").Value
+
+Set rst = Nothing
+
+Me.Local.Value = "São Paulo"
+Me.DiaEnvio.Value = Day(Date)
+If Month(Date) = 1 Then Me.MesEnvio.Value = "Janeiro"
+If Month(Date) = 2 Then Me.MesEnvio.Value = "Fevereiro"
+If Month(Date) = 3 Then Me.MesEnvio.Value = "Março"
+If Month(Date) = 4 Then Me.MesEnvio.Value = "Abril"
+If Month(Date) = 5 Then Me.MesEnvio.Value = "Maio"
+If Month(Date) = 6 Then Me.MesEnvio.Value = "Junho"
+If Month(Date) = 7 Then Me.MesEnvio.Value = "Julho"
+If Month(Date) = 8 Then Me.MesEnvio.Value = "Agosto"
+If Month(Date) = 9 Then Me.MesEnvio.Value = "Setembro"
+If Month(Date) = 10 Then Me.MesEnvio.Value = "Outubro"
+If Month(Date) = 11 Then Me.MesEnvio.Value = "Novembro"
+If Month(Date) = 12 Then Me.MesEnvio.Value = "Dezembro"
+Me.AnoEnvio.Value = Year(Date)
+
+InserirData: 'recebe a data de recebimento das NF do usuário
+Dim DataRecebimento As Date
+Dim DataRecebimentoTemp As String
+DataRecebimentoTemp = InputBox("Favor inserir a data de Recebimento das Notas Fiscais.", , Format(Now(), "dd/mm/yyyy"))
+TestaDeNovo:
+If IsDate(DataRecebimentoTemp) = True Then
+    DataRecebimento = DataRecebimentoTemp
+Else
+    Select Case Len(DataRecebimentoTemp)
+        Case 2
+            DataRecebimentoTemp = DataRecebimentoTemp & "/" & Month(Now()) & "/" & Year(Now())
+            GoTo TestaDeNovo
+        Case 4
+            DataRecebimentoTemp = Left(DataRecebimentoTemp, 2) & "/" & Right(DataRecebimentoTemp, 2) & "/" & Year(Now())
+            GoTo TestaDeNovo
+        Case 6
+            DataRecebimentoTemp = Left(DataRecebimentoTemp, 2) & "/" & Mid(DataRecebimentoTemp, 3, 2) & "/" & Right(DataRecebimentoTemp, 2)
+            GoTo TestaDeNovo
+        Case 8
+            DataRecebimentoTemp = Left(DataRecebimentoTemp, 2) & "/" & Mid(DataRecebimentoTemp, 3, 2) & "/" & Right(DataRecebimentoTemp, 4)
+            GoTo TestaDeNovo
+    End Select
+    GoTo InserirData
+End If
+If IsDate(DataRecebimento) = False Then GoTo InserirData
+Me.RecebimentoNF.Value = DataRecebimento
+
+Atraso = 0
+Select Case DiaRecebimento
+    Case "Dia 25"
+        If Day(DataRecebimento) > 25 Or Month(DataRecebimento) > Month(Now) Then
+            If Month(Now()) = 1 Then Atraso = DifDiasUteis(CDate("25/12/" & Year(Now()) - 1), DataRecebimento)
+            If Month(Now()) <> 1 Then Atraso = DifDiasUteis(CDate("25/" & Month(Now()) - 1 & "/" & Year(Now())), DataRecebimento)
+        End If
+        Me.DataPrevPgto.Value = SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 5)
+        Me.DataPrevPgto.Value = SomaDiasUteis(Me.DataPrevPgto.Value, Atraso + 1)
+    Case "Dia 05"
+        If Day(DataRecebimento) > 5 Then
+            Atraso = DifDiasUteis(CDate("05/" & Month(Now()) & "/" & Year(Now())), DataRecebimento)
+        End If
+        Me.DataPrevPgto.Value = SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 12)
+        Me.DataPrevPgto.Value = SomaDiasUteis(Me.DataPrevPgto.Value, Atraso + 1)
+    Case "Dia 08"
+        If Day(DataRecebimento) > 8 Then
+            Atraso = DifDiasUteis(CDate("08/" & Month(Now()) & "/" & Year(Now())), DataRecebimento)
+        End If
+        Me.DataPrevPgto.Value = SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 12)
+        Me.DataPrevPgto.Value = SomaDiasUteis(Me.DataPrevPgto.Value, Atraso + 1)
+    Case "2º dia útil"
+        If DataRecebimento > SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 2) Then
+            Atraso = DifDiasUteis(SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 2), DataRecebimento)
+        End If
+        Me.DataPrevPgto.Value = SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 12)
+        Me.DataPrevPgto.Value = SomaDiasUteis(Me.DataPrevPgto.Value, Atraso + 1)
+    Case "4º dia útil"
+        If DataRecebimento > SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 4) Then
+            Atraso = DifDiasUteis(SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 4), DataRecebimento)
+        End If
+        Me.DataPrevPgto.Value = SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 12)
+        Me.DataPrevPgto.Value = SomaDiasUteis(Me.DataPrevPgto.Value, Atraso + 1)
+    Case "5º dia útil"
+        If DataRecebimento > SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 5) Then
+            Atraso = DifDiasUteis(SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 5), DataRecebimento)
+        End If
+        Me.DataPrevPgto.Value = SomaDiasUteis(CDate("01/" & Month(Now()) & "/" & Year(Now())), 12)
+        Me.DataPrevPgto.Value = SomaDiasUteis(Me.DataPrevPgto.Value, Atraso + 1)
+End Select
+
+'Se, por motivo de atraso da entrega das NF, o pagamento deva ser no mês seguinte,
+'muda a data para o último dia útil do mês corrente
+If Month(Me.DataPrevPgto.Value) > Month(Now()) Then 'muda o dia do pagamento para o último dia do mês
+    Select Case Month(Now())
+        Case 1, 3, 5, 7, 8, 10, 12
+            Me.DataPrevPgto.Value = CDate("31/" & Month(Now()) & "/" & Year(Now()))
+        Case 4, 6, 9, 11
+            Me.DataPrevPgto.Value = CDate("30/" & Month(Now()) & "/" & Year(Now()))
+        Case 2
+            Me.DataPrevPgto.Value = CDate("28/" & Month(Now()) & "/" & Year(Now()))
+    End Select
+End If
+Do While Weekday(Me.DataPrevPgto.Value) = 1 Or Weekday(Me.DataPrevPgto.Value) = 7 'transforma a data de pagamento em dia útil, caso não seja (voltando um ou mais dias)
+    Me.DataPrevPgto.Value = Me.DataPrevPgto.Value - 1
+Loop
+
+SaldoContrato = SaldoDoContrato(Me.cbo_Contrato.Value)
+
+End Sub
+
+Private Function SomaDiasUteis(Data, QtdeDias) As Date
+Dim i As Integer
+SomaDiasUteis = Data
+
+If Weekday(SomaDiasUteis) = 2 Or Weekday(SomaDiasUteis) = 3 Or Weekday(SomaDiasUteis) = 4 Or Weekday(SomaDiasUteis) = 5 Then
+    QtdeDias = QtdeDias - 1
+End If
+
+For i = 1 To QtdeDias
+    If Weekday(SomaDiasUteis) = 2 Or Weekday(SomaDiasUteis) = 3 Or Weekday(SomaDiasUteis) = 4 Or Weekday(SomaDiasUteis) = 5 Then
+        SomaDiasUteis = SomaDiasUteis + 1
+    Else
+        If Weekday(SomaDiasUteis) = 6 Then SomaDiasUteis = SomaDiasUteis + 2
+        If Weekday(SomaDiasUteis) = 1 Then SomaDiasUteis = SomaDiasUteis + 1
+    End If
+Next
+
+End Function
+
+Private Function DifDiasUteis(DataInicio As Date, DataFim As Date) As Integer
+Dim Data As Date
+DifDiasUteis = 0
+
+For Data = DataInicio + 1 To DataFim
+    If Weekday(Data) = 2 Or Weekday(Data) = 3 Or Weekday(Data) = 4 Or Weekday(Data) = 5 Or Weekday(Data) = 6 Then
+        DifDiasUteis = DifDiasUteis + 1
+    End If
+Next
+
+End Function
+
+Private Function SaldoDoContrato(CodContratos)
+Dim txtSQL As String
+Dim rst As DAO.Recordset
+Dim db As DAO.Database
+
+On Error GoTo Erro
+
+txtSQL = "SELECT QRY__FRM_ContratosVisaoGeral.CodContratos,  " & _
+    "IIf([DiasVigencia8]+[mesesvigencia8]>0,8,IIf([DiasVigencia7]+[mesesvigencia7]>0,7,IIf([DiasVigencia6]+[mesesvigencia6]>0,6, " & _
+    "IIf([DiasVigencia5]+[mesesvigencia5]>0,5,IIf([DiasVigencia4]+[mesesvigencia4]>0,4,IIf([DiasVigencia3]+[mesesvigencia3]>0,3, " & _
+    "IIf([DiasVigencia2]+[mesesvigencia2]>0,2,IIf([DiasVigencia1]+[mesesvigencia1]>0,1,0)))))))) AS Vig,  " & _
+    "IIf([DiasVigencia8]+[mesesvigencia8]>0,[SaldoContrato8],IIf([DiasVigencia7]+[mesesvigencia7]>0,[SaldoContrato7], " & _
+    "IIf([DiasVigencia6]+[mesesvigencia6]>0,[SaldoContrato6],IIf([DiasVigencia5]+[mesesvigencia5]>0,[SaldoContrato5], " & _
+    "IIf([DiasVigencia4]+[mesesvigencia4]>0,[SaldoContrato4],IIf([DiasVigencia3]+[mesesvigencia3]>0,[SaldoContrato3], " & _
+    "IIf([DiasVigencia2]+[mesesvigencia2]>0,[SaldoContrato2],IIf([DiasVigencia1]+[mesesvigencia1]>0,[SaldoContrato1],[SaldoContrato0])))))))) AS Saldo " & _
+    "FROM QRY__FRM_ContratosVisaoGeral " & _
+    "WHERE CodContratos = " & CodContratos & ";"
+
+Set db = CurrentDb
+Set rst = db.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+
+SaldoDoContrato = rst.Fields("Saldo").Value
+Exit Function
+
+Erro:
+If Err = 3021 Then
+    SaldoDoContrato = 0
+Else
+    MsgBox ("Erro")
+End If
+
+End Function
+
+
+
+
+
+
+
+
