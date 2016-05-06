@@ -1,0 +1,16 @@
+/*
+Esta Query é utilizada na tela FRM_Consultas_4_3DPE_DPA2, inclusive como exportar.
+
+E também na Query QRY_C40_DispendioPorFornecedor que serve para a tela FRM_Consultas_4_0DPE
+*/
+
+SELECT 
+TBL_EGTTV.NomeEGTTV, 
+Sum(TBL_Pagamentos.Valor) AS SomaDeValor, 
+cast (AnoPgto as integer) as AnoPgto
+
+
+FROM (TBL_Pagamentos INNER JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV
+GROUP BY TBL_EGTTV.NomeEGTTV, AnoPgto
+HAVING (((Sum(TBL_Pagamentos.Valor))>0) AND ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-2))
+ORDER BY Sum(TBL_Pagamentos.Valor) DESC;
