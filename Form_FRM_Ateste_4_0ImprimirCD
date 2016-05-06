@@ -1,0 +1,397 @@
+Option Compare Database
+
+Private Sub cbo_Contrato_Click()
+Call ArrumaCampos("cbo_Contrato")
+End Sub
+
+Private Sub cbo_Tipo_Click()
+Me.cbo_Contrato.Value = Clear
+Me.cbo_Contrato.Requery
+Call ArrumaCampos
+End Sub
+
+Private Sub cbo_UF_Click()
+Me.cbo_Contrato.Value = Clear
+Me.cbo_Contrato.Requery
+Call ArrumaCampos
+End Sub
+
+Private Sub cmd_ExcluirNomeCD_Click()
+Dim rst As Recordset
+Dim txtSQL As String
+
+txtSQL = "SELECT TBL_CapaCD_Temp.* FROM TBL_CapaCD_Temp ;"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+rst.MoveFirst
+Do While Not rst.EOF
+    If rst!CodCapaCDTemp = CDbl(Me.lstCDEGTTV.Column(0)) Then
+        rst.Delete
+        Exit Do
+    End If
+    rst.MoveNext
+Loop
+
+Me.lstCDEGTTV.Requery
+End Sub
+
+Private Sub cmd_CapaExtratos_Click()
+Call Imprimir("CapaExtratos")
+End Sub
+
+Private Sub cmd_CDEgttv_Click()
+Call Imprimir("CDEgttv")
+End Sub
+
+Private Sub cmd_CDSidic_Click()
+Call Imprimir("CDSidic")
+End Sub
+
+Private Sub cmd_IndiceCDEgttv_Click()
+Call Imprimir("IndiceCDEgttv")
+End Sub
+
+Private Sub cmd_IndiceCDSIDIC_Click()
+Call Imprimir("IndiceCDSIDIC")
+End Sub
+
+Private Sub cmd_ImprimirTudo_Click()
+Call Imprimir("Todos")
+End Sub
+Private Sub Imprimir(Botao As String)
+Dim txtSQL As String
+Dim rst As Recordset
+
+If IsNull(Me.lstAtestes.Value) Then
+    MsgBox ("Favor selecionar um Ateste")
+    Exit Sub
+End If
+
+Matricula = Environ("USERNAME") 'Identifica o usuário que está mexendo no Access
+txtSQL = "SELECT TBL_Usuarios.* FROM TBL_Usuarios WHERE Matricula = '" & Matricula & "' ; "
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+NomeUsuario = ExtraiPrimeiroNome(rst!Nome)
+
+'Identifica o restante das variáveis necessárias para preencher as Capas dos CD
+CodigoContratos = Me.lstAtestes.Column(6)
+txtSQL = "SELECT TBL_EGTTV.NomeEGTTV, Processo, SIGES, Compromisso, Tipo, Regiao,TBL_Contratos.UF  FROM TBL_Contratos INNER JOIN TBL_EGTTV ON TBL_contratos.codEGTTV = TBL_EGTTV.CodEGTTV WHERE TBL_Contratos.CodContratos = " & CodigoContratos & ";"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+
+NomeEGTTV = rst!NomeEGTTV
+Processo = CStr(Left(CStr(rst!Processo), 4) & "." & Mid(CStr(rst!Processo), 5, 2) & "." & Mid(CStr(rst!Processo), 7, 4) & _
+    "." & Mid(CStr(rst!Processo), 11, 2) & "/" & Right(CStr(rst!Processo), 4))
+NumCompromisso = rst!Compromisso
+SIGES = Left(CStr(rst!SIGES), 6) & "/" & Right(CStr(rst!SIGES), 4)
+PrimeiroNomeEGTTV = ExtraiPrimeiroNome(rst!NomeEGTTV)
+Tipo = rst!Tipo
+Regiao = rst!Regiao
+UF = rst!UF
+NomeCDSIDIC = Me.NomeCDSIDIC.Value
+
+txtSQL = "SELECT TBL_NF.NumAteste, TBL_NF.AnoAteste, Sum(TBL_NF.ValorNF) AS SomaDeValorNF FROM TBL_NF WHERE NumAteste = " & Me.lstAtestes.Column(0) & " AND AnoAteste = " & Me.lstAtestes.Column(1) & " GROUP BY TBL_NF.NumAteste, TBL_NF.AnoAteste ;"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+
+ValorTotal = rst!SomaDeValorNF
+
+DataPgto = CDate(Me.lstAtestes.Column(3))
+CompetenciaServico = Me.lstAtestes.Column(4)
+
+'Começa a preencher o Excel
+Dim CaminhoExcel As String
+Dim Xl As Excel.Application
+Dim XlBook As Excel.Workbook
+Dim XlSheet As Excel.Worksheet
+
+'Nome do caminho para o arquivo
+CaminhoExcel = "\\sp0000sr028\Public\7854\cetes\EQUIPE CONTRATOS\GESTÃO DE PAGAMENTOS\Arquivos Access\MO19088.xlsm"
+    
+'Abre o Excel
+Set Xl = CreateObject("Excel.Application")
+Set XlBook = GetObject(CaminhoExcel)
+     
+'Deixa o Excel visível
+Xl.Visible = False
+
+'Define a guia que será atualizada
+Set XlSheet = XlBook.Worksheets("Ateste")
+
+'Começa o preenchimento do Ateste!
+    XlSheet.Range("A27") = NomeEGTTV                        'NomeEGTTV - CodContratos
+    XlSheet.Range("D52") = Processo                         'NumeroProcesso - CodContratos
+    XlSheet.Range("S33") = Format(DataPgto, "dd/mm/yyyy")   'DataPagamento
+    XlSheet.Range("J33") = CompetenciaServico               'Competencia
+    XlSheet.Range("A39") = CStr(Left(NumCompromisso, 6))    'Compromisso
+    XlSheet.Range("D39") = Mid(NumCompromisso, 7, 4)        'Compromisso
+    XlSheet.Range("G39") = Right(NumCompromisso, 2)         'Compromisso
+    XlSheet.Range("B33") = ValorTotal                       'ValorPagamento
+
+'Atualiza a guia Capa Extratos
+Set XlSheet = XlBook.Worksheets("Capa EXTRATOS")
+XlSheet.Range("C5") = SIGES                       'SIGES
+XlSheet.Range("A10") = PrimeiroNomeEGTTV          'Nome EGTTV
+XlSheet.Range("G15") = Tipo                       'Tipo
+XlSheet.Range("A20") = Regiao & " / " & UF        'Região / UF
+XlSheet.Range("B45") = NomeUsuario                'Nome de Usuário
+XlSheet.Range("G45") = Matricula                  'Matricula
+
+'Atualiza a guia Indice SIDIC
+Set XlSheet = XlBook.Worksheets("INDICE SIDIC")
+XlSheet.Range("C9") = UF                          'UF
+XlSheet.Range("C10") = Tipo                       'Tipo
+XlSheet.Range("B13") = NomeCDSIDIC                'Nome Arquivo SIDIC
+
+'Atualia a guia Indice CD EGTTV
+Set XlSheet = XlBook.Worksheets("INDICE CD EGTTV")
+
+txtSQL = "SELECT TBL_CapaCD_Temp.* FROM TBL_CapaCD_Temp;"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+Linha = 13
+Do While Not rst.EOF
+    XlSheet.Range("B" & Linha) = rst!NomeArquivo  'Nome Arquivo SIDIC
+    XlSheet.Range("C" & Linha) = rst!Descricao    'Nome Arquivo SIDIC
+    Linha = Linha + 1
+    rst.MoveNext
+Loop
+
+'Imprime
+Set XlSheet = XlBook.Worksheets("Capa EXTRATOS")
+If Botao = "Todos" Or Botao = "CapaExtratos" Then XlSheet.PrintOut
+Set XlSheet = XlBook.Worksheets("INDICE SIDIC")
+If Botao = "Todos" Or Botao = "IndiceCDSIDIC" Then XlSheet.PrintOut
+Set XlSheet = XlBook.Worksheets("CD SIDIC")
+If Botao = "Todos" Or Botao = "CDSidic" Then XlSheet.PrintOut
+If Me.cbo_EGTTVEnviou.Value = "Não" Then Set XlSheet = XlBook.Worksheets("INDICE CD EGTTV")
+If Me.cbo_EGTTVEnviou.Value = "Sim" Then Set XlSheet = XlBook.Worksheets("INDICE CD EGTTV Pronto")
+If Botao = "Todos" Or Botao = "IndiceCDEgttv" Then XlSheet.PrintOut
+Set XlSheet = XlBook.Worksheets("CD EGTTV")
+If Botao = "Todos" Or Botao = "CDEgttv" Then XlSheet.PrintOut
+
+XlBook.Close SaveChanges:=False
+Set Xl = Nothing
+Set XlBook = Nothing
+Set XlSheet = Nothing
+
+' apaga as infos temporárias de NF e fecha o FORM
+'txtSQL = "DELETE TBL_CapaCD_Temp.* FROM TBL_CapaCD_Temp;"
+'CurrentDb.Execute txtSQL
+'DoCmd.Close
+
+End Sub
+
+Private Sub cmd_IncluirNomeCD_Click()
+Dim rst As Recordset
+Dim txtSQL As String
+
+If Me.NomeCDEGTTV = Clear Or IsNull(Me.NomeCDEGTTV = Clear) Then Exit Sub
+
+txtSQL = "SELECT TBL_CapaCD_Temp.* FROM TBL_CapaCD_Temp ;"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+rst.AddNew
+rst!NomeArquivo = Me.NomeCDEGTTV.Value & ".pdf"
+rst!Descricao = Me.cbo_DescCDEGTTV.Value
+rst.Update
+
+Me.NomeCDEGTTV = Clear
+Me.cbo_DescCDEGTTV = Clear
+Me.lstCDEGTTV.Requery
+End Sub
+
+Private Sub Form_Load()
+'Verifica o nível de acesso do usuário
+TpAcesso = VerificaAcesso()
+If TpAcesso = "OcultaTudo" Or TpAcesso = "GILOG - Pagamentos" Or TpAcesso = "GEOCE" Then
+    DoCmd.Close
+    Exit Sub
+End If
+'Limpa a TBL Temporária Capa CD, utilizada no lstCapaCD deste FRM
+Dim txtSQL As String
+txtSQL = "DELETE TBL_CapaCD_Temp.* FROM TBL_CapaCD_Temp;"
+CurrentDb.Execute txtSQL
+Me.lstCDEGTTV.Requery
+Call ArrumaCampos
+End Sub
+
+Private Sub lstAtestes_Click()
+Call ArrumaCampos("LstAtestes")
+Dim rst As Recordset
+Dim rst2 As Recordset
+Dim txtSQL As String
+
+txtSQL = "SELECT UF, Tipo, TBL_Contratos.CodContratos FROM TBL_Contratos INNER JOIN TBL_Atestes on TBL_Contratos.CodContratos = TBL_Atestes.CodContratos " & _
+        "WHERE (((TBL_Atestes.NumAteste)=" & Me.lstAtestes.Column(0) & ") AND ((TBL_Atestes.AnoAteste)=" & Me.lstAtestes.Column(1) & "));"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+rst.MoveFirst
+Me.cbo_UF.Value = rst!UF
+Me.cbo_Tipo.Value = rst!Tipo
+Me.cbo_Contrato.Value = rst!CodContratos
+
+Me.cbo_UF.Requery
+Me.cbo_Tipo.Requery
+Me.cbo_Contrato.Requery
+
+'Limpa a TBL Temporária Capa CD, utilizada no lstCapaCD deste FRM
+txtSQL = "DELETE TBL_CapaCD_Temp.* FROM TBL_CapaCD_Temp;"
+CurrentDb.Execute txtSQL
+
+'Cria de novo a TBL Temporária Capa CD com as informações das NF do Ateste
+txtSQL = "SELECT TBL_NF.NumeroNF, TBL_NF.TipoServico " & _
+         "FROM TBL_NF " & _
+         "WHERE (((TBL_NF.NumAteste)=" & Me.lstAtestes.Column(0) & ") AND ((TBL_NF.AnoAteste)=" & Me.lstAtestes.Column(1) & "));"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+txtSQL = "SELECT TBL_CapaCD_Temp.* FROM TBL_CapaCD_Temp;"
+Set rst2 = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+'rst.MoveFirst
+Do While Not rst.EOF
+    rst2.AddNew
+    rst2!NomeArquivo = rst!NumeroNF & ".pdf"
+    rst2!Descricao = rst!TipoServico
+    rst2.Update
+    rst.MoveNext
+Loop
+
+Me.lstCDEGTTV.Requery
+
+End Sub
+
+Private Sub ArrumaCampos(Optional Campo As String, Optional NumeroNF As Integer)
+
+'Verifica quem é null
+If IsNull(Me.cbo_UF.Value) = True Then
+    UF = Clear
+Else
+    UF = Me.cbo_UF.Value
+End If
+If IsNull(Me.cbo_Tipo.Value) = True Then
+    Tipo = Clear
+Else
+    Tipo = Me.cbo_Tipo.Value
+End If
+If IsNull(Me.cbo_Contrato.Value) = True Then
+    Contrato = Clear
+Else
+    Contrato = Me.cbo_Contrato.Value
+End If
+If IsNull(Me.lstAtestes.Column(0)) = True Then
+    NumAteste = Clear
+    AnoAteste = Clear
+Else
+    NumAteste = Me.lstAtestes.Column(0)
+    AnoAteste = Me.lstAtestes.Column(1)
+End If
+
+Me.cbo_UF.Requery
+Me.cbo_Tipo.Requery
+Me.cbo_Contrato.Requery
+
+If Campo = "cbo_Contrato" Then Me.lstAtestes.RowSource = ""
+
+'Monta a Lista de Atestes
+Dim txtSQL As String
+Dim TemWhere As Boolean
+
+txtSQL = "SELECT TBL_Atestes.NumAteste AS Num, TBL_Atestes.AnoAteste AS Ano, TBL_Contratos.NomeContrato AS Contrato, TBL_Atestes.DataPagamento AS Pagamento, TBL_Atestes.Competencia AS Competência, TBL_Atestes.Compromisso AS Compromisso, TBL_Atestes.CodContratos " & _
+    "FROM TBL_Atestes INNER JOIN TBL_Contratos ON TBL_Atestes.CodContratos = TBL_Contratos.CodContratos "
+TemWhere = False
+
+If Contrato <> Clear Then
+    TemWhere = True
+    txtSQL = txtSQL & "WHERE (((TBL_Contratos.CodContratos)=" & Contrato & ") "
+End If
+If Tipo <> Clear Then
+    If TemWhere = False Then
+        txtSQL = txtSQL & "WHERE ("
+    Else
+        txtSQL = txtSQL & "AND "
+    End If
+    TemWhere = True
+    txtSQL = txtSQL & "((TBL_Contratos.Tipo)='" & Tipo & "') "
+End If
+If UF <> Clear Then
+    If TemWhere = False Then
+        txtSQL = txtSQL & "WHERE ("
+    Else
+        txtSQL = txtSQL & "AND "
+    End If
+    TemWhere = True
+    txtSQL = txtSQL & "((TBL_Contratos.UF)='" & UF & "') "
+End If
+If TemWhere = False Then
+    txtSQL = txtSQL & " ORDER BY TBL_Atestes.AnoAteste DESC , TBL_Atestes.NumAteste DESC;"
+Else
+    txtSQL = txtSQL & ") ORDER BY TBL_Atestes.AnoAteste DESC , TBL_Atestes.NumAteste DESC;"
+End If
+
+If Campo <> "lstAtestes" Then Me.lstAtestes.RowSource = txtSQL
+
+If Campo = "lstAtestes" Then
+    Dim rst As Recordset
+    txtSQL = "SELECT UF FROM TBL_Contratos INNER JOIN TBL_Atestes ON TBL_Contratos.CodContratos = TBL_Atestes.CodContratos WHERE TBL_Atestes.NumAteste = " & Me.lstAtestes.Column(0) & " AND TBL_Atestes.AnoAteste=" & Me.lstAtestes.Column(1) & ";"
+    Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+    Me.NomeCDSIDIC.Value = arruma(CStr(Me.lstAtestes.Column(4))) & " - " & rst!UF & " - " & Left(CStr(Me.lstAtestes.Column(5)), 6) & _
+    "_" & Mid(CStr(Me.lstAtestes.Column(5)), 7, 4) & "-" & Right(CStr(Me.lstAtestes.Column(5)), 2) & ".xlsx"
+    If Left(Me.NomeCDSIDIC.Value, 3) = "JAN" Then Me.NomeCDSIDIC.Value = "01 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "FEV" Then Me.NomeCDSIDIC.Value = "02 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "MAR" Then Me.NomeCDSIDIC.Value = "03 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "ABR" Then Me.NomeCDSIDIC.Value = "04 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "MAI" Then Me.NomeCDSIDIC.Value = "05 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "JUN" Then Me.NomeCDSIDIC.Value = "06 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "JUL" Then Me.NomeCDSIDIC.Value = "07 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "AGO" Then Me.NomeCDSIDIC.Value = "08 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "SET" Then Me.NomeCDSIDIC.Value = "09 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "OUT" Then Me.NomeCDSIDIC.Value = "10 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "NOV" Then Me.NomeCDSIDIC.Value = "11 - " & Me.NomeCDSIDIC.Value
+    If Left(Me.NomeCDSIDIC.Value, 3) = "DEZ" Then Me.NomeCDSIDIC.Value = "12 - " & Me.NomeCDSIDIC.Value
+End If
+
+If Me.cbo_Tipo.Value = "PAE" Then Me.cbo_DescCDEGTTV.RowSource = "'Extratos de serviços de transporte para abastecimento/desabastecimento';'Extratos de serviços de custódia'"
+If Me.cbo_Tipo.Value = "AG" Then Me.cbo_DescCDEGTTV.RowSource = "'Extratos de serviços de transporte municipal';'Extratos de serviços de transporte intermunicipal';'Extratos de serviços de custódia';'Extratos de serviços de tratamento'"
+
+End Sub
+
+Private Function arruma(Texto)
+For i = 1 To Len(Texto)
+    Select Case Mid(Texto, i, 1)
+        Case "\"
+            Texto = Left(Texto, i - 1) & "-" & Right(Texto, Len(Texto) - i)
+        Case "/"
+            Texto = Left(Texto, i - 1) & "-" & Right(Texto, Len(Texto) - i)
+        Case ":"
+            Texto = Left(Texto, i - 1) & "-" & Right(Texto, Len(Texto) - i)
+        Case "*"
+            Texto = Left(Texto, i - 1) & "-" & Right(Texto, Len(Texto) - i)
+        Case "?"
+            Texto = Left(Texto, i - 1) & "-" & Right(Texto, Len(Texto) - i)
+        Case "'"
+            Texto = Left(Texto, i - 1) & Right(Texto, Len(Texto) - i)
+            i = i - 1
+        Case "<"
+            Texto = Left(Texto, i - 1) & "-" & Right(Texto, Len(Texto) - i)
+        Case ">"
+            Texto = Left(Texto, i - 1) & "-" & Right(Texto, Len(Texto) - i)
+        Case "|"
+            Texto = Left(Texto, i - 1) & "-" & Right(Texto, Len(Texto) - i)
+    End Select
+Next
+arruma = Texto
+End Function
+
+Private Function ExtraiPrimeiroNome(Nome)
+
+For i = 1 To Len(Nome)
+    If Mid(Nome, i, 1) = " " Then
+        ExtraiPrimeiroNome = Left(Nome, i - 1)
+        Exit For
+    End If
+Next
+
+End Function
+
+
