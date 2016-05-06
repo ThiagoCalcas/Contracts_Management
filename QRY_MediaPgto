@@ -1,0 +1,300 @@
+/*
+Query que cálcula, baseado nas últimas 5 competências de Pagamento (por contrato / por evento) a média utilizando os todos os pagamentos e/ou, em caso de 5 pagamentos (ou seja, contratos não tão novos), desconsiderando o maior valor.
+Normalmente o maior valor refere-se a uma repactuação ou pagamento de NF de outro compromisso.
+*/
+
+SELECT
+QRY_8.CodContratos,
+QRY_8.Compromisso,
+QRY_8.Media_5_Meses,
+QRY_8.[Media_5-1_Meses],
+(CASE WHEN [ValorPgto_M-1] = 0 THEN [ValorPgto_M-2] 
+            WHEN [ValorPgto_M-2] = 0 THEN [ValorPgto_M-1]
+             ELSE ([ValorPgto_M-1]+[ValorPgto_M-2]) /2
+END) AS Media_2_Meses
+
+FROM (
+SELECT 
+QRY_7.CodContratos,
+QRY_7.Compromisso,
+Right([UltimoPgto],2) + '/' + Left([UltimoPgto],4) AS [DataPgto_M-1],
+([SomaDeValor_M1_825]+[SomaDeValor_M1_19708]+[SomaDeValor_M1_21604]) AS [ValorPgto_M-1], 
+Right([PenultimoPgto],2) + '/' + Left([PenultimoPgto],4) AS [DataPgto_M-2], 
+([SomaDeValor_M2_825]+[SomaDeValor_M2_19708]+[SomaDeValor_M2_21604]) AS [ValorPgto_M-2], 
+Right([AntePenultimoPgto],2) + '/' + Left([AntePenultimoPgto],4) AS [DataPgto_M-3], 
+([SomaDeValor_M3_825]+[SomaDeValor_M3_19708]+[SomaDeValor_M3_21604]) AS [ValorPgto_M-3], 
+Right([AnteAntePenultimoPgto],2) + '/' + Left([AnteAntePenultimoPgto],4) AS [DataPgto_M-4], 
+([SomaDeValor_M4_825]+[SomaDeValor_M4_19708]+[SomaDeValor_M4_21604]) AS [ValorPgto_M-4], 
+Right([AnteAnteAntePenultimoPgto],2) + '/' + Left([AnteAnteAntePenultimoPgto],4) AS [DataPgto_M-5], 
+([SomaDeValor_M5_825]+[SomaDeValor_M5_19708]+[SomaDeValor_M5_21604]) AS [ValorPgto_M-5], 
+
+(CASE WHEN ([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825])=0 THEN 0 ELSE
+([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825])/
+(CASE WHEN [SomaDeValor_M1_825]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_825]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M3_825]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_825]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M5_825]>0 THEN 1 ELSE 0 END) END ) AS Media_5_825, 
+
+(CASE WHEN ([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708])=0 THEN 0 ELSE
+([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708])/
+(CASE WHEN [SomaDeValor_M1_19708]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_19708]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M3_19708]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_19708]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M5_19708]>0 THEN 1 ELSE 0 END) END ) AS Media_5_19708,
+
+(CASE WHEN ([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604])=0 THEN 0 ELSE
+([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604])/
+(CASE WHEN [SomaDeValor_M1_21604]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_21604]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M3_21604]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_21604]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M5_21604]>0 THEN 1 ELSE 0 END) END ) AS Media_5_21604,
+
+(CASE WHEN ([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825])=0 THEN 0 ELSE
+([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825])/
+(CASE WHEN [SomaDeValor_M1_825]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_825]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M3_825]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_825]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M5_825]>0 THEN 1 ELSE 0 END) END ) +
+(CASE WHEN ([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708])=0 THEN 0 ELSE
+([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708])/
+(CASE WHEN [SomaDeValor_M1_19708]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_19708]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M3_19708]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_19708]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M5_19708]>0 THEN 1 ELSE 0 END) END ) +
+(CASE WHEN ([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604])=0 THEN 0 ELSE
+([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604])/
+(CASE WHEN [SomaDeValor_M1_21604]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_21604]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M3_21604]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_21604]>0 THEN 1 ELSE 0 END +
+CASE WHEN [SomaDeValor_M5_21604]>0 THEN 1 ELSE 0 END) END ) AS Media_5_Meses,
+
+CASE WHEN [SomaDeValor_M1_825]>[SomaDeValor_M2_825] And [SomaDeValor_M1_825]>[SomaDeValor_M3_825] And [SomaDeValor_M1_825]>[SomaDeValor_M4_825] And [SomaDeValor_M1_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M1_825] 
+WHEN [SomaDeValor_M2_825]>[SomaDeValor_M3_825] And [SomaDeValor_M2_825]>[SomaDeValor_M4_825] And [SomaDeValor_M2_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M2_825]
+WHEN [SomaDeValor_M3_825]>[SomaDeValor_M4_825] And [SomaDeValor_M3_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M3_825]
+WHEN [SomaDeValor_M4_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M4_825] ELSE [SomaDeValor_M5_825] END AS MaiorPgto_825, 
+
+CASE WHEN [SomaDeValor_M1_19708]>[SomaDeValor_M2_19708] And [SomaDeValor_M1_19708]>[SomaDeValor_M3_19708] And [SomaDeValor_M1_19708]>[SomaDeValor_M4_19708] And [SomaDeValor_M1_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M1_19708] 
+WHEN [SomaDeValor_M2_19708]>[SomaDeValor_M3_19708] And [SomaDeValor_M2_19708]>[SomaDeValor_M4_19708] And [SomaDeValor_M2_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M2_19708]
+WHEN [SomaDeValor_M3_19708]>[SomaDeValor_M4_19708] And [SomaDeValor_M3_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M3_19708]
+WHEN [SomaDeValor_M4_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M4_19708] ELSE [SomaDeValor_M5_19708] END AS MaiorPgto_19708, 
+
+CASE WHEN [SomaDeValor_M1_21604]>[SomaDeValor_M2_21604] And [SomaDeValor_M1_21604]>[SomaDeValor_M3_21604] And [SomaDeValor_M1_21604]>[SomaDeValor_M4_21604] And [SomaDeValor_M1_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M1_21604] 
+WHEN [SomaDeValor_M2_21604]>[SomaDeValor_M3_21604] And [SomaDeValor_M2_21604]>[SomaDeValor_M4_21604] And [SomaDeValor_M2_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M2_21604]
+WHEN [SomaDeValor_M3_21604]>[SomaDeValor_M4_21604] And [SomaDeValor_M3_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M3_21604]
+WHEN [SomaDeValor_M4_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M4_21604] ELSE [SomaDeValor_M5_21604] END AS MaiorPgto_21604, 
+
+CASE WHEN ([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825])=0 THEN 0 ELSE
+    CASE WHEN (
+        CASE WHEN [SomaDeValor_M1_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M2_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M4_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_825]>0 THEN 1 ELSE 0 END ) = 5 THEN
+            ([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825] - 
+                CASE WHEN [SomaDeValor_M1_825]>[SomaDeValor_M2_825] And [SomaDeValor_M1_825]>[SomaDeValor_M3_825] And [SomaDeValor_M1_825]>[SomaDeValor_M4_825] And [SomaDeValor_M1_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M1_825] 
+            WHEN [SomaDeValor_M2_825]>[SomaDeValor_M3_825] And [SomaDeValor_M2_825]>[SomaDeValor_M4_825] And [SomaDeValor_M2_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M2_825]
+            WHEN [SomaDeValor_M3_825]>[SomaDeValor_M4_825] And [SomaDeValor_M3_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M3_825]
+            WHEN [SomaDeValor_M4_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M4_825] ELSE [SomaDeValor_M5_825] END
+        ) / 4 ELSE
+        ([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825])/
+        (
+        CASE WHEN [SomaDeValor_M1_825]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_825]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_825]>0 THEN 1 ELSE 0 END )
+    END
+END AS [Media_5-1_825],
+
+CASE WHEN ([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708])=0 THEN 0 ELSE
+    CASE WHEN (
+        CASE WHEN [SomaDeValor_M1_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M2_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M4_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_19708]>0 THEN 1 ELSE 0 END ) = 5 THEN
+            ([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708] - 
+                CASE WHEN [SomaDeValor_M1_19708]>[SomaDeValor_M2_19708] And [SomaDeValor_M1_19708]>[SomaDeValor_M3_19708] And [SomaDeValor_M1_19708]>[SomaDeValor_M4_19708] And [SomaDeValor_M1_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M1_19708] 
+            WHEN [SomaDeValor_M2_19708]>[SomaDeValor_M3_19708] And [SomaDeValor_M2_19708]>[SomaDeValor_M4_19708] And [SomaDeValor_M2_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M2_19708]
+            WHEN [SomaDeValor_M3_19708]>[SomaDeValor_M4_19708] And [SomaDeValor_M3_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M3_19708]
+            WHEN [SomaDeValor_M4_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M4_19708] ELSE [SomaDeValor_M5_19708] END
+        ) / 4 ELSE
+        ([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708])/
+        (
+        CASE WHEN [SomaDeValor_M1_19708]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_19708]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_19708]>0 THEN 1 ELSE 0 END )
+    END
+END AS [Media_5-1_19708],
+
+CASE WHEN ([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604])=0 THEN 0 ELSE
+    CASE WHEN (
+        CASE WHEN [SomaDeValor_M1_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M2_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M4_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_21604]>0 THEN 1 ELSE 0 END ) = 5 THEN
+            ([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604] - 
+                CASE WHEN [SomaDeValor_M1_21604]>[SomaDeValor_M2_21604] And [SomaDeValor_M1_21604]>[SomaDeValor_M3_21604] And [SomaDeValor_M1_21604]>[SomaDeValor_M4_21604] And [SomaDeValor_M1_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M1_21604] 
+            WHEN [SomaDeValor_M2_21604]>[SomaDeValor_M3_21604] And [SomaDeValor_M2_21604]>[SomaDeValor_M4_21604] And [SomaDeValor_M2_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M2_21604]
+            WHEN [SomaDeValor_M3_21604]>[SomaDeValor_M4_21604] And [SomaDeValor_M3_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M3_21604]
+            WHEN [SomaDeValor_M4_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M4_21604] ELSE [SomaDeValor_M5_21604] END
+        ) / 4 ELSE
+        ([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604])/
+        (
+        CASE WHEN [SomaDeValor_M1_21604]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_21604]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_21604]>0 THEN 1 ELSE 0 END )
+    END
+END AS [Media_5-1_21604],
+
+/* [Media_5-1_825]+[Media_5-1_19708]+[Media_5-1_21604] AS [Media_5-1_Meses] */
+
+(CASE WHEN ([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825])=0 THEN 0 ELSE
+    CASE WHEN (
+        CASE WHEN [SomaDeValor_M1_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M2_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M4_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_825]>0 THEN 1 ELSE 0 END ) = 5 THEN
+            ([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825] - 
+                CASE WHEN [SomaDeValor_M1_825]>[SomaDeValor_M2_825] And [SomaDeValor_M1_825]>[SomaDeValor_M3_825] And [SomaDeValor_M1_825]>[SomaDeValor_M4_825] And [SomaDeValor_M1_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M1_825] 
+            WHEN [SomaDeValor_M2_825]>[SomaDeValor_M3_825] And [SomaDeValor_M2_825]>[SomaDeValor_M4_825] And [SomaDeValor_M2_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M2_825]
+            WHEN [SomaDeValor_M3_825]>[SomaDeValor_M4_825] And [SomaDeValor_M3_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M3_825]
+            WHEN [SomaDeValor_M4_825]>[SomaDeValor_M5_825] THEN [SomaDeValor_M4_825] ELSE [SomaDeValor_M5_825] END
+        ) / 4 ELSE
+        ([SomaDeValor_M1_825]+[SomaDeValor_M2_825]+[SomaDeValor_M3_825]+[SomaDeValor_M4_825]+[SomaDeValor_M5_825])/
+        (
+        CASE WHEN [SomaDeValor_M1_825]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_825]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_825]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_825]>0 THEN 1 ELSE 0 END )
+    END
+END +
+CASE WHEN ([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708])=0 THEN 0 ELSE
+    CASE WHEN (
+        CASE WHEN [SomaDeValor_M1_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M2_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M4_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_19708]>0 THEN 1 ELSE 0 END ) = 5 THEN
+            ([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708] - 
+                CASE WHEN [SomaDeValor_M1_19708]>[SomaDeValor_M2_19708] And [SomaDeValor_M1_19708]>[SomaDeValor_M3_19708] And [SomaDeValor_M1_19708]>[SomaDeValor_M4_19708] And [SomaDeValor_M1_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M1_19708] 
+            WHEN [SomaDeValor_M2_19708]>[SomaDeValor_M3_19708] And [SomaDeValor_M2_19708]>[SomaDeValor_M4_19708] And [SomaDeValor_M2_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M2_19708]
+            WHEN [SomaDeValor_M3_19708]>[SomaDeValor_M4_19708] And [SomaDeValor_M3_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M3_19708]
+            WHEN [SomaDeValor_M4_19708]>[SomaDeValor_M5_19708] THEN [SomaDeValor_M4_19708] ELSE [SomaDeValor_M5_19708] END
+        ) / 4 ELSE
+        ([SomaDeValor_M1_19708]+[SomaDeValor_M2_19708]+[SomaDeValor_M3_19708]+[SomaDeValor_M4_19708]+[SomaDeValor_M5_19708])/
+        (
+        CASE WHEN [SomaDeValor_M1_19708]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_19708]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_19708]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_19708]>0 THEN 1 ELSE 0 END )
+    END
+END +
+CASE WHEN ([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604])=0 THEN 0 ELSE
+    CASE WHEN (
+        CASE WHEN [SomaDeValor_M1_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M2_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M4_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_21604]>0 THEN 1 ELSE 0 END ) = 5 THEN
+            ([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604] - 
+                CASE WHEN [SomaDeValor_M1_21604]>[SomaDeValor_M2_21604] And [SomaDeValor_M1_21604]>[SomaDeValor_M3_21604] And [SomaDeValor_M1_21604]>[SomaDeValor_M4_21604] And [SomaDeValor_M1_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M1_21604] 
+            WHEN [SomaDeValor_M2_21604]>[SomaDeValor_M3_21604] And [SomaDeValor_M2_21604]>[SomaDeValor_M4_21604] And [SomaDeValor_M2_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M2_21604]
+            WHEN [SomaDeValor_M3_21604]>[SomaDeValor_M4_21604] And [SomaDeValor_M3_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M3_21604]
+            WHEN [SomaDeValor_M4_21604]>[SomaDeValor_M5_21604] THEN [SomaDeValor_M4_21604] ELSE [SomaDeValor_M5_21604] END
+        ) / 4 ELSE
+        ([SomaDeValor_M1_21604]+[SomaDeValor_M2_21604]+[SomaDeValor_M3_21604]+[SomaDeValor_M4_21604]+[SomaDeValor_M5_21604])/
+        (
+        CASE WHEN [SomaDeValor_M1_21604]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M2_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M3_21604]>0 THEN 1 ELSE 0 END + CASE WHEN [SomaDeValor_M4_21604]>0 THEN 1 ELSE 0 END + 
+        CASE WHEN [SomaDeValor_M5_21604]>0 THEN 1 ELSE 0 END )
+    END
+END ) AS [Media_5-1_Meses]
+
+FROM (
+
+SELECT 
+QRY_6.CodContratos, 
+QRY_6.Compromisso,
+QRY_6.UltimoPgto, 
+QRY_6.PenultimoPgto, 
+QRY_6.AntePenultimoPgto, 
+QRY_6.AnteAntePenultimoPgto, 
+QRY_6.AnteAnteAntePenultimoPgto, 
+Sum(QRY_6.Valor_M1_825) AS SomaDeValor_M1_825, 
+Sum(QRY_6.Valor_M1_19708) AS SomaDeValor_M1_19708, 
+Sum(QRY_6.Valor_M1_21604) AS SomaDeValor_M1_21604, 
+Sum(QRY_6.Valor_M2_825) AS SomaDeValor_M2_825, 
+Sum(QRY_6.Valor_M2_19708) AS SomaDeValor_M2_19708, 
+Sum(QRY_6.Valor_M2_21604) AS SomaDeValor_M2_21604, 
+Sum(QRY_6.Valor_M3_825) AS SomaDeValor_M3_825, 
+Sum(QRY_6.Valor_M3_19708) AS SomaDeValor_M3_19708, 
+Sum(QRY_6.Valor_M3_21604) AS SomaDeValor_M3_21604, 
+Sum(QRY_6.Valor_M4_825) AS SomaDeValor_M4_825, 
+Sum(QRY_6.Valor_M4_19708) AS SomaDeValor_M4_19708, 
+Sum(QRY_6.Valor_M4_21604) AS SomaDeValor_M4_21604, 
+Sum(QRY_6.Valor_M5_825) AS SomaDeValor_M5_825, 
+Sum(QRY_6.Valor_M5_19708) AS SomaDeValor_M5_19708, 
+Sum(QRY_6.Valor_M5_21604) AS SomaDeValor_M5_21604 
+
+FROM (
+
+SELECT 
+QRY_AnteAnteAntePenultimoPgto.CodContratos, 
+QRY_AnteAnteAntePenultimoPgto.Compromisso,
+QRY_AnteAnteAntePenultimoPgto.UltimoPgto, 
+QRY_AnteAnteAntePenultimoPgto.PenultimoPgto, 
+QRY_AnteAnteAntePenultimoPgto.AntePenultimoPgto, 
+QRY_AnteAnteAntePenultimoPgto.AnteAntePenultimoPgto, 
+QRY_AnteAnteAntePenultimoPgto.AnteAnteAntePenultimoPgto, 
+
+(CASE WHEN [Evento]=825 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[UltimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M1_825,
+(CASE WHEN [Evento]=19708 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[UltimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M1_19708,
+(CASE WHEN [Evento]=21604 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[UltimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M1_21604,
+
+(CASE WHEN [Evento]=825 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[PenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M2_825,
+(CASE WHEN [Evento]=19708 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[PenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M2_19708,
+(CASE WHEN [Evento]=21604 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[PenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M2_21604,
+
+(CASE WHEN [Evento]=825 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[AntePenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M3_825,
+(CASE WHEN [Evento]=19708 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[AntePenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M3_19708,
+(CASE WHEN [Evento]=21604 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[AntePenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M3_21604,
+
+(CASE WHEN [Evento]=825 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[AnteAntePenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M4_825,
+(CASE WHEN [Evento]=19708 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[AnteAntePenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M4_19708,
+(CASE WHEN [Evento]=21604 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[AnteAntePenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M4_21604,
+
+(CASE WHEN [Evento]=825 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[AnteAnteAntePenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M5_825,
+(CASE WHEN [Evento]=19708 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[AnteAnteAntePenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M5_19708,
+(CASE WHEN [Evento]=21604 THEN ( CASE WHEN [AnoCompet]*100+[MesCompet]=[AnteAnteAntePenultimoPgto] THEN [Valor] ELSE 0 END ) ELSE 0 END) AS Valor_M5_21604
+
+FROM TBL_Pagamentos INNER JOIN ((
+
+SELECT QRY_8.CodContratos,QRY_8.Compromisso, QRY_8.UltimoPgto, QRY_8.PenultimoPgto, QRY_8.AntePenultimoPgto, QRY_8.AnteAntePenultimoPgto, Max(QRY_8.MesAnoCompet) AS AnteAnteAntePenultimoPgto
+FROM (SELECT QRY_7.CodContratos,QRY_7.Compromisso, QRY_7.UltimoPgto, QRY_7.PenultimoPgto, QRY_7.AntePenultimoPgto, QRY_7.AnteAntePenultimoPgto, 
+CASE WHEN [AnoCompet]*100+[MesCompet] >= [AnteAntePenultimoPgto] THEN 0 ELSE [AnoCompet]*100+[MesCompet] END AS MesAnoCompet
+FROM (SELECT QRY_6.CodContratos, QRY_6.Compromisso, QRY_6.UltimoPgto, QRY_6.PenultimoPgto, AntePenultimoPgto, Max(QRY_6.MesAnoCompet) AS AnteAntePenultimoPgto
+FROM (SELECT QRY_5.CodContratos, QRY_5.Compromisso, QRY_5.UltimoPgto, QRY_5.PenultimoPgto, QRY_5.AntePenultimoPgto, 
+CASE WHEN [AnoCompet]*100+[MesCompet] >= [AntePenultimoPgto] THEN 0 ELSE [AnoCompet]*100+[MesCompet] END AS MesAnoCompet
+FROM TBL_Pagamentos INNER JOIN ((SELECT CodContratos, Compromisso, UltimoPgto, PenultimoPgto, Max(MesAnoCompet) AS AntePenultimoPgto
+FROM (SELECT QRY_3.CodContratos, QRY_3.Compromisso, QRY_3.UltimoPgto, QRY_3.PenultimoPgto, 
+CASE WHEN [AnoCompet]*100+[MesCompet] >= [PenultimoPgto] THEN 0 ELSE [AnoCompet]*100+[MesCompet] END AS MesAnoCompet
+FROM (SELECT QRY_2.CodContratos, QRY_2.Compromisso, QRY_2.UltimoPgto, Max(QRY_2.MesAnoCompet) AS PenultimoPgto
+FROM (SELECT QRY_1.CodContratos, QRY_1.Compromisso, QRY_1.UltimoPgto, 
+CASE WHEN [AnoCompet]*100+[MesCompet] >= [UltimoPgto] THEN 0 ELSE [AnoCompet]*100+[MesCompet] END AS MesAnoCompet
+FROM TBL_Pagamentos INNER JOIN ((SELECT TBL_Contratos.CodContratos, TBL_Contratos.Compromisso, Max([AnoCompet]*100+[MesCompet] ) AS UltimoPgto
+FROM TBL_Pagamentos INNER JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso
+GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.Compromisso
+
+)  AS QRY_1 INNER JOIN TBL_Contratos ON QRY_1.CodContratos = TBL_Contratos.CodContratos) ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso
+)  AS QRY_2
+GROUP BY QRY_2.CodContratos, QRY_2.Compromisso, QRY_2.UltimoPgto
+)  AS QRY_3 INNER JOIN (TBL_Pagamentos INNER JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) ON QRY_3.CodContratos = TBL_Contratos.CodContratos
+)  AS QRY_4
+GROUP BY CodContratos, Compromisso, UltimoPgto, PenultimoPgto
+)  AS QRY_5 INNER JOIN TBL_Contratos ON QRY_5.CodContratos = TBL_Contratos.CodContratos) ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso
+)  AS QRY_6
+GROUP BY QRY_6.CodContratos, QRY_6.Compromisso, QRY_6.UltimoPgto, QRY_6.PenultimoPgto, AntePenultimoPgto
+)  AS QRY_7 INNER JOIN (TBL_Pagamentos INNER JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) ON QRY_7.CodContratos = TBL_Contratos.CodContratos
+)  AS QRY_8
+GROUP BY CodContratos,Compromisso, QRY_8.UltimoPgto, QRY_8.PenultimoPgto, QRY_8.AntePenultimoPgto, QRY_8.AnteAntePenultimoPgto
+
+)  AS QRY_AnteAnteAntePenultimoPgto INNER JOIN TBL_Contratos ON QRY_AnteAnteAntePenultimoPgto.CodContratos = TBL_Contratos.CodContratos) ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso
+
+)  AS QRY_6 GROUP BY QRY_6.CodContratos, QRY_6.UltimoPgto, QRY_6.PenultimoPgto, QRY_6.AntePenultimoPgto, QRY_6.AnteAntePenultimoPgto, QRY_6.AnteAnteAntePenultimoPgto , Compromisso
+
+)  AS QRY_7
+
+)  AS QRY_8;
