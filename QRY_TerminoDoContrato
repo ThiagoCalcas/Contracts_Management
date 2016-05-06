@@ -1,0 +1,100 @@
+SELECT 
+QRY_Termino_do_Contrato0.NomeEGTTV, 
+QRY_Termino_do_Contrato0.CodContratos, 
+QRY_Termino_do_Contrato0.NomeContrato, 
+QRY_Termino_do_Contrato0.SIGES, 
+QRY_Termino_do_Contrato0.UF, 
+
+CASE 	WHEN [FimProrr8]>[FimProrr7] THEN [FimProrr8]
+ 	WHEN [FimProrr7]>[FimProrr6] THEN [FimProrr7]
+ 	WHEN [FimProrr6]>[FimProrr5] THEN [FimProrr6]
+ 	WHEN [FimProrr5]>[FimProrr4] THEN [FimProrr5]
+ 	WHEN [FimProrr4]>[FimProrr3] THEN [FimProrr4]
+ 	WHEN [FimProrr3]>[FimProrr2] THEN [FimProrr3]
+ 	WHEN [FimProrr2]>[FimProrr1] THEN [FimProrr2]
+ 	WHEN [FimProrr1]>[FimProrr0] THEN [FimProrr1] ELSE [FimProrr0] END AS DataFimContrato,
+
+QRY_Termino_do_Contrato0.Tipo, 
+QRY_DuracaoContrato.Meses
+
+FROM 
+(
+
+/* ****************************************************** Início do QRY_Termino_DoContrato0 ******************************************************* */
+
+SELECT 
+TBL_EGTTV.NomeEGTTV, 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.NomeContrato, 
+TBL_Contratos.Tipo, 
+TBL_Contratos.Situacao,
+TBL_Contratos.SIGES, 
+MIN(TBL_Prorrogacoes.ProrrDataInicio) AS MínDeProrrDataInicio,
+MAX(CASE NumeroProrrogacao WHEN 0 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr0, 
+MAX(CASE NumeroProrrogacao WHEN 1 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr1, 
+MAX(CASE NumeroProrrogacao WHEN 2 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr2, 
+MAX(CASE NumeroProrrogacao WHEN 3 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr3, 
+MAX(CASE NumeroProrrogacao WHEN 4 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr4, 
+MAX(CASE NumeroProrrogacao WHEN 5 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr5, 
+MAX(CASE NumeroProrrogacao WHEN 6 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr6, 
+MAX(CASE NumeroProrrogacao WHEN 7 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr7, 
+MAX(CASE NumeroProrrogacao WHEN 8 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr8, 
+TBL_Contratos.UF
+
+FROM (TBL_EGTTV INNER JOIN TBL_Contratos ON TBL_EGTTV.CodEGTTV = TBL_Contratos.CodEGTTV) INNER JOIN TBL_Prorrogacoes ON TBL_Contratos.CodContratos = TBL_Prorrogacoes.CodContratos
+
+
+GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Contratos.Tipo, TBL_Contratos.UF, TBL_Contratos.Situacao, SIGES
+
+/* ******************************************************* Fim do QRY_Termino_DoContrato0 ******************************************************** */
+
+) AS QRY_Termino_do_Contrato0 INNER JOIN 
+
+(
+
+/* ******************************************************** Início do QRY_DuracaoContrato ********************************************************* */
+
+SELECT 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.NomeContrato, 
+QRY1.DataInicio, 
+QRY2.DataFim, 
+CASE WHEN Day([DataInicio]) = 1 THEN
+    CASE 
+        WHEN Day([DataFim]) = 28 THEN (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])+1
+        WHEN Day([DataFim]) = 29 THEN (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])+1
+        WHEN Day([DataFim]) = 30 THEN (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])+1
+        WHEN Day([DataFim]) = 31 THEN (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])+1
+        ELSE (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio]) END
+    ELSE (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])
+END AS Meses
+
+FROM 
+(TBL_Contratos INNER JOIN (
+
+SELECT 
+TBL_Contratos.CodContratos, 
+Min(TBL_Prorrogacoes.ProrrDataInicio) AS DataInicio
+
+FROM 
+TBL_Contratos INNER JOIN TBL_Prorrogacoes ON TBL_Contratos.CodContratos = TBL_Prorrogacoes.CodContratos
+GROUP BY TBL_Contratos.CodContratos
+
+)  AS QRY1 ON TBL_Contratos.CodContratos = QRY1.CodContratos) INNER JOIN (
+
+SELECT 
+TBL_Contratos.CodContratos, 
+Max(TBL_Prorrogacoes.ProrrDataFim) AS DataFim
+
+FROM 
+TBL_Contratos INNER JOIN TBL_Prorrogacoes ON TBL_Contratos.CodContratos = TBL_Prorrogacoes.CodContratos
+GROUP BY TBL_Contratos.CodContratos
+
+)  AS QRY2 ON TBL_Contratos.CodContratos = QRY2.CodContratos
+
+
+/* ******************************************************* Fim do QRY_DuracaoContrato ******************************************************** */
+
+) AS QRY_DuracaoContrato ON QRY_Termino_do_Contrato0.CodContratos = QRY_DuracaoContrato.CodContratos
+
+ORDER BY CodContratos;
