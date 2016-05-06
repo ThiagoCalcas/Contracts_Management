@@ -1,0 +1,201 @@
+/*
+
+Esta query trás, para o ANO CORRENTE, uma previsão da dotação orçamentária necessária.
+Para consultar o ANO SEGUINTE, utilizar a QRY_C14_PrevOrcAnoSeguinte.
+
+Esta query é composta pelas seguintes subQuerys:
+- QRY_PagamentosPorCompet
+- QRY_MesRepactuacao
+- QRY_ValorMensalLicitacao
+
+A ideia é ver o valor necessário no orçamento por contrato, por mês.
+
+A lógica de cálculo é a seguinte:
+- Se houver pagamento para o mês de competência, considera este valor; caso contrário
+- Se houver Licitação iniciada e valor mensal estimado para o Contrato, considera este valor; caso contrário
+- Se o mês for igual ou maior ao da última Repactuação (ou do contrato), considera a média de pagamentos * índice de ajuste da CCT; caso contrário
+- Se o mês for menor que o da última Repactuação (ou do contrato), considera a média de pagamentos.
+
+*** Atualmente usando média dos 2 últimos meses de competência
+
+*/
+
+SELECT 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.NomeContrato, 
+
+CAST ( CASE WHEN PgtoJAN <> 0 THEN PgtoJAN
+WHEN DATEPART ( mm , Vencimento ) >= 1 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 1 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS JAN,
+
+CAST ( CASE WHEN PgtoFEV <> 0 THEN PgtoFEV
+WHEN DATEPART ( mm , Vencimento ) >= 2 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 2 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS FEV,
+
+CAST ( CASE WHEN PgtoMAR <> 0 THEN PgtoMAR
+WHEN DATEPART ( mm , Vencimento ) >= 3 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 3 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS MAR,
+
+CAST ( CASE WHEN PgtoABR <> 0 THEN PgtoABR
+WHEN DATEPART ( mm , Vencimento ) >= 4 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 4 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS ABR,
+
+CAST ( CASE WHEN PgtoMAI <> 0 THEN PgtoMAI
+WHEN DATEPART ( mm , Vencimento ) >= 5 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 5 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS MAI,
+
+CAST ( CASE WHEN PgtoJUN <> 0 THEN PgtoJUN
+WHEN DATEPART ( mm , Vencimento ) >= 6 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 6 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS JUN,
+
+CAST ( CASE WHEN PgtoJUL <> 0 THEN PgtoJUL
+WHEN DATEPART ( mm , Vencimento ) >= 7 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 7 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS JUL,
+
+CAST ( CASE WHEN PgtoAGO <> 0 THEN PgtoAGO
+WHEN DATEPART ( mm , Vencimento ) >= 8 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 8 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS AGO,
+
+CAST ( CASE WHEN PgtoSET <> 0 THEN PgtoSET
+WHEN DATEPART ( mm , Vencimento ) >= 9 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 9 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS [SET],
+
+CAST ( CASE WHEN PgtoOUT <> 0 THEN PgtoOUT
+WHEN DATEPART ( mm , Vencimento ) >= 10 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 10 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS OUT,
+
+CAST ( CASE WHEN PgtoNOV <> 0 THEN PgtoNOV
+WHEN DATEPART ( mm , Vencimento ) >= 11 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 11 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS NOV,
+
+CAST ( CASE WHEN PgtoDEZ <> 0 THEN PgtoDEZ
+WHEN DATEPART ( mm , Vencimento ) >= 12 AND year ( Vencimento ) = Year(GETDATE()) then ValorMensalLicitacao
+WHEN MesRepact >= 12 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) )
+ELSE Media_2_Meses END AS Money ) AS DEZ,
+
+IndiceCCT
+
+FROM ((( TBL_Contratos LEFT JOIN
+
+(
+/* ******************************************************************************************************************* Inicio QRY_PagamentosPorCompet
+*/  
+
+SELECT 
+
+TBL_Contratos.CodContratos, 
+TBL_Contratos.NomeContrato, 
+CAST (CASE WHEN [ValorJAN] IS NULL THEN 0 ELSE [ValorJAN] END AS MONEY) AS PgtoJAN, 
+CAST (CASE WHEN [ValorFEV] IS NULL THEN 0 ELSE [ValorFEV] END AS MONEY) AS PgtoFEV, 
+CAST (CASE WHEN [ValorMAR] IS NULL THEN 0 ELSE [ValorMAR] END AS MONEY) AS PgtoMAR, 
+CAST (CASE WHEN [ValorABR] IS NULL THEN 0 ELSE [ValorABR] END AS MONEY) AS PgtoABR, 
+CAST (CASE WHEN [ValorMAI] IS NULL THEN 0 ELSE [ValorMAI] END AS MONEY) AS PgtoMAI, 
+CAST (CASE WHEN [ValorJUN] IS NULL THEN 0 ELSE [ValorJUN] END AS MONEY) AS PgtoJUN, 
+CAST (CASE WHEN [ValorJUL] IS NULL THEN 0 ELSE [ValorJUL] END AS MONEY) AS PgtoJUL, 
+CAST (CASE WHEN [ValorAGO] IS NULL THEN 0 ELSE [ValorAGO] END AS MONEY) AS PgtoAGO, 
+CAST (CASE WHEN [ValorSET] IS NULL THEN 0 ELSE [ValorSET] END AS MONEY) AS PgtoSET, 
+CAST (CASE WHEN [ValorOUT] IS NULL THEN 0 ELSE [ValorOUT] END AS MONEY) AS PgtoOUT, 
+CAST (CASE WHEN [ValorNOV] IS NULL THEN 0 ELSE [ValorNOV] END AS MONEY) AS PgtoNOV, 
+CAST (CASE WHEN [ValorDEZ] IS NULL THEN 0 ELSE [ValorDEZ] END AS MONEY) AS PgtoDEZ, 
+
+(CAST (CASE WHEN [ValorJAN] IS NULL THEN 0 ELSE [ValorJAN] END +CASE WHEN [ValorFEV] IS NULL THEN 0 ELSE [ValorFEV] END +CASE WHEN [ValorMAR] IS NULL THEN 0 ELSE [ValorMAR] END +CASE WHEN [ValorABR] IS NULL THEN 0 ELSE [ValorABR] END +CASE WHEN [ValorMAI] IS NULL THEN 0 ELSE [ValorMAI] END +CASE WHEN [ValorJUN] IS NULL THEN 0 ELSE [ValorJUN] END +CASE WHEN [ValorJUL] IS NULL THEN 0 ELSE [ValorJUL] END +CASE WHEN [ValorAGO] IS NULL THEN 0 ELSE [ValorAGO] END +CASE WHEN [ValorSET] IS NULL THEN 0 ELSE [ValorSET] END +CASE WHEN [ValorOUT] IS NULL THEN 0 ELSE [ValorOUT] END +CASE WHEN [ValorNOV] IS NULL THEN 0 ELSE [ValorNOV] END +CASE WHEN [ValorDEZ] IS NULL THEN 0 ELSE [ValorDEZ] END AS MONEY)) AS TOTAL
+
+
+FROM (((((((((((TBL_Contratos LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorJAN FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='01') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS JANEIRO ON TBL_Contratos.CodContratos = JANEIRO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorFEV FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='02') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS FEVEREIRO ON TBL_Contratos.CodContratos = FEVEREIRO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorMAR FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='03') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS MARCO ON TBL_Contratos.CodContratos = MARCO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorABR FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='04') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS ABRIL ON TBL_Contratos.CodContratos = ABRIL.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorMAI FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='05') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS MAIO ON TBL_Contratos.CodContratos = MAIO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorJUN FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='06') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS JUNHO ON TBL_Contratos.CodContratos = JUNHO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorJUL FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='07') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS JULHO ON TBL_Contratos.CodContratos = JULHO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorAGO FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='08') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS AGOSTO ON TBL_Contratos.CodContratos = AGOSTO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorSET FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='09') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS SETEMBRO ON TBL_Contratos.CodContratos = SETEMBRO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorOUT FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='10') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS OUTUBRO ON TBL_Contratos.CodContratos = OUTUBRO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorNOV FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='11') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS NOVEMBRO ON TBL_Contratos.CodContratos = NOVEMBRO.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, Sum(TBL_Pagamentos.Valor) AS ValorDEZ FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Pagamentos.MesCompet, TBL_Pagamentos.AnoCompet HAVING (((TBL_Pagamentos.MesCompet)='12') AND ((TBL_Pagamentos.AnoCompet)=Year(GETDATE())))) AS DEZEMBRO ON TBL_Contratos.CodContratos = DEZEMBRO.CodContratos
+
+/* ******************************************************************************************************************* Fim QRY_PagamentosPorCompet
+*/  
+
+) AS QRY_PagamentosPorCompet ON TBL_Contratos.CodContratos = QRY_PagamentosPorCompet.CodContratos ) LEFT JOIN (
+
+/* ******************************************************************************************************************* Inicio QRY_MesRepactuacao
+*/ 
+
+SELECT 
+TBL_Contratos.CodContratos, 
+CASE WHEN DATEPART ( mm , RepactDataInicio) IS NULL THEN 0 ELSE DATEPART ( mm , RepactDataInicio) END AS MesRepact 
+
+FROM 
+(TBL_Contratos INNER JOIN TBL_Repactuacoes ON TBL_Contratos.CodContratos = TBL_Repactuacoes.CodContratos) INNER JOIN (
+
+SELECT 
+TBL_Contratos.NomeContrato, 
+TBL_Contratos.CodContratos, 
+Max(TBL_Repactuacoes.NumeroRepact) AS MáxDeNumeroRepact
+
+FROM 
+TBL_Contratos INNER JOIN TBL_Repactuacoes ON TBL_Contratos.CodContratos = TBL_Repactuacoes.CodContratos
+
+GROUP BY TBL_Contratos.NomeContrato, TBL_Contratos.CodContratos
+
+) AS QRY_UltimaRepact ON (TBL_Contratos.CodContratos = QRY_UltimaRepact.CodContratos) AND (TBL_Repactuacoes.NumeroRepact = QRY_UltimaRepact.MáxDeNumeroRepact)
+
+WHERE (((TBL_Contratos.Situacao)<>'Inativo'))
+
+/* ******************************************************************************************************************* Fim QRY_MesRepactuacao
+*/ 
+
+) AS QRY_MesRepactuacao ON TBL_Contratos.CodContratos = QRY_MesRepactuacao.CodContratos) LEFT JOIN (
+
+
+/* ******************************************************************************************************************* Inicio QRY_ValorMensalLicitacao
+*/ 
+
+SELECT 
+TBL_Contratos.CodContratos, 
+Vencimento,
+SUM( CAST (CASE WHEN PropostaFinal IS NOT NULL THEN PropostaFinal / CASE WHEN TBL_Contratos.Tipo = 'PAE' THEN 24 WHEN TBL_Contratos.Tipo = 'AG' THEN 30 END
+WHEN NegociacaoGILOG IS NOT NULL THEN NegociacaoGILOG / CASE WHEN TBL_Contratos.Tipo = 'PAE' THEN 24 WHEN TBL_Contratos.Tipo = 'AG' THEN 30 END
+WHEN EstimativaCAIXA IS NOT NULL THEN EstimativaCAIXA / CASE WHEN TBL_Contratos.Tipo = 'PAE' THEN 24 WHEN TBL_Contratos.Tipo = 'AG' THEN 30 END
+ELSE 0 END AS Money )) AS ValorMensalLicitacao
+
+FROM
+TBL_Contratos LEFT JOIN TBL_Licitacoes ON TBL_Contratos.SIGES = TBL_Licitacoes.CodContratos 
+
+GROUP BY TBL_Contratos.CodContratos, Vencimento
+
+/* ******************************************************************************************************************* Fim QRY_ValorMensalLicitacao
+*/ 
+
+) AS QRY_ValorMensalLicitacao ON TBL_Contratos.CodContratos = QRY_ValorMensalLicitacao.CodContratos) INNER JOIN TBL_MediaPG ON TBL_Contratos.Compromisso = TBL_MediaPG.Compromisso
+
+, TBL_CCT
+
+WHERE TBL_CCT.AnoCCT = Year(GETDATE()) AND TBL_Contratos.Situacao = 'Ativo'
+;
+
