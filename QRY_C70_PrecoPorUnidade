@@ -1,0 +1,73 @@
+/* 
+Esta Query é utilizada no FRM_Consultas_7_0VPU para servir como base nas querys geradas pelo VBA para apresentar os preços em tela, conforme 
+solicitado pelo usuário nos filtros 
+*/
+
+SELECT 
+TBL_Unidades.CodUnidades, 
+TBL_Unidades.CodigoSISFIN, 
+TBL_Unidades.NomeUnidade, 
+TBL_Contratos.Situacao, 
+TBL_Contratos.NomeContrato, 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.UF, 
+TBL_Unidades.CodAditamentos, 
+TBL_Repactuacoes.NumeroRepact AS NumeroRepactuacao, 
+TBL_Precos.CodRepactuacoes, 
+TBL_Roteiros.[Municipio / Roteiro], 
+
+CAST( TBL_Unidades.SupRotineiro*TBL_Precos.Rotineiro+
+TBL_Unidades.RecRotineiro*TBL_Precos.Rotineiro+
+TBL_Unidades.SupEventual*TBL_Precos.Eventual+
+TBL_Unidades.RecEventual*TBL_Precos.Eventual+
+TBL_Unidades.SupEspecial*TBL_Precos.Especial+
+TBL_Unidades.RecEspecial*TBL_Precos.Especial+
+TBL_Unidades.Conjugado*TBL_Precos.Conjugado+
+TBL_Unidades.SupRotMult*TBL_Precos.RotineiroMultiplo+
+TBL_Unidades.SupEveMult*TBL_Precos.EventualMultiplo+
+TBL_Unidades.SupEspMult*TBL_Precos.EspecialMultiplo AS Money) AS VlrTransp, 
+
+CAST( TBL_Unidades.TratCedulas*TBL_Precos.TratCedulas+
+TBL_Unidades.TratMoedas*TBL_Precos.TratMoedas+
+TBL_Unidades.AdValoremBB*TBL_Precos.AdValoremBB+
+TBL_Unidades.AdValoremOutros*TBL_Precos.AdValoremOutros+
+TBL_Unidades.Custodia*TBL_Precos.Custodia AS Money) AS VlrBase, 
+
+CAST( TBL_Unidades.AcionEveSimples*TBL_Precos.AcionEveSimples+
+TBL_Unidades.AcionEspSimples*TBL_Precos.AcionEspSimples+
+TBL_Unidades.AcionComplementarSimples*TBL_Precos.AcionComplementarSimples+
+TBL_Unidades.AcionEveMultiplo*TBL_Precos.AcionEveMultiplo+
+TBL_Unidades.AcionEspMultiplo*TBL_Precos.AcionEspMultiplo+
+TBL_Unidades.AcionComplementarMultiplo*TBL_Precos.AcionComplementarMultiplo+
+TBL_Unidades.CarroDedicado*TBL_Precos.CarroDedicado+
+TBL_Unidades.MotoDedicada*TBL_Precos.MotoDedicada AS Money) AS VlrAcionamento,
+
+CAST( TBL_Unidades.SupRotineiro*TBL_Precos.Rotineiro+
+TBL_Unidades.RecRotineiro*TBL_Precos.Rotineiro+
+TBL_Unidades.SupEventual*TBL_Precos.Eventual+
+TBL_Unidades.RecEventual*TBL_Precos.Eventual+
+TBL_Unidades.SupEspecial*TBL_Precos.Especial+
+TBL_Unidades.RecEspecial*TBL_Precos.Especial+
+TBL_Unidades.Conjugado*TBL_Precos.Conjugado+
+TBL_Unidades.SupRotMult*TBL_Precos.RotineiroMultiplo+
+TBL_Unidades.SupEveMult*TBL_Precos.EventualMultiplo+
+TBL_Unidades.SupEspMult*TBL_Precos.EspecialMultiplo+
+TBL_Unidades.TratCedulas*TBL_Precos.TratCedulas+
+TBL_Unidades.TratMoedas*TBL_Precos.TratMoedas+
+TBL_Unidades.AdValoremBB*TBL_Precos.AdValoremBB+
+TBL_Unidades.AdValoremOutros*TBL_Precos.AdValoremOutros+
+TBL_Unidades.Custodia*TBL_Precos.Custodia +
+TBL_Unidades.AcionEveSimples*TBL_Precos.AcionEveSimples+
+TBL_Unidades.AcionEspSimples*TBL_Precos.AcionEspSimples+
+TBL_Unidades.AcionComplementarSimples*TBL_Precos.AcionComplementarSimples+
+TBL_Unidades.AcionEveMultiplo*TBL_Precos.AcionEveMultiplo+
+TBL_Unidades.AcionEspMultiplo*TBL_Precos.AcionEspMultiplo+
+TBL_Unidades.AcionComplementarMultiplo*TBL_Precos.AcionComplementarMultiplo+
+TBL_Unidades.CarroDedicado*TBL_Precos.CarroDedicado+
+TBL_Unidades.MotoDedicada*TBL_Precos.MotoDedicada AS Money) AS VlrTotal
+
+FROM (TBL_Contratos INNER JOIN ((TBL_Roteiros INNER JOIN TBL_Precos ON TBL_Roteiros.CodRoteiros = TBL_Precos.CodRoteiros) INNER JOIN TBL_Unidades ON TBL_Roteiros.CodRoteiros = TBL_Unidades.CodRoteiros) ON TBL_Contratos.CodContratos = TBL_Roteiros.CodContratos) INNER JOIN TBL_Repactuacoes ON (TBL_Repactuacoes.CodRepactuacoes = TBL_Precos.CodRepactuacoes) AND (TBL_Contratos.CodContratos = TBL_Repactuacoes.CodContratos)
+
+WHERE (((TBL_Contratos.Situacao)='Ativo'))
+
+ORDER BY TBL_Unidades.CodigoSISFIN;
