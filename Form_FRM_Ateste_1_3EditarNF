@@ -1,0 +1,78 @@
+Option Compare Database
+
+Private Sub Form_Load()
+
+    On Error GoTo SairSimples
+
+    
+    Dim Tipo As String, Texto As String
+    Tipo = Forms!FRM_Ateste_1_0GerarNovoAteste!cbo_Tipo
+    If Tipo = "PAE" Then Texto = "'Extratos de serviços de transporte municipal para abastecimento/desabastecimento';'Extratos de serviços de transporte intermunicipal para abastecimento/desabastecimento';'Extratos de serviços de custódia';'Extratos de serviços de atendimento técnico'"
+    If Tipo = "AG" Then Texto = "'Extratos de serviços de transporte municipal';'Extratos de serviços de transporte intermunicipal';'Extratos de serviços de custódia';'Extratos de serviços de tratamento'"
+    Me.Controls("TipoServico1").RowSource = Texto
+    
+    NF = Forms!FRM_Ateste_1_0GerarNovoAteste!lstNF
+    
+    Dim txtSQL As String
+    txtSQL = "SELECT TBL_NF_Temp.* FROM TBL_NF_Temp WHERE CodNFTemp=" & NF & "; "
+    
+    Dim rst As DAO.Recordset
+    Dim db As DAO.Database
+    Set db = CurrentDb
+    
+    Set rst = db.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+    
+    Me.Controls("CodNF").Value = rst.Fields("CodNFTemp").Value
+    Me.Controls("SequencialCNPJ1").Value = rst.Fields("CNPJdaNF").Value
+    Me.Controls("TipoDocFiscal1").Value = rst.Fields("TipoNF").Value
+    Me.Controls("Numero1").Value = rst.Fields("NumeroNF").Value
+    Me.Controls("Serie1").Value = rst.Fields("SerieNF").Value
+    Me.Controls("DataEmissao1").Value = rst.Fields("DataEmissaoNF").Value
+    Me.Controls("ValorDoc1").Value = rst.Fields("ValorNF").Value
+    Me.Controls("Municipio1").Value = rst.Fields("MunicipioServicoNF").Value
+    Me.Controls("IsentoISSQN1").Value = rst.Fields("ValorIsentoISSQN").Value
+    Me.Controls("Aliquota1").Value = rst.Fields("AliquotaNF").Value
+    Me.Controls("Destino1").Value = rst.Fields("Destino").Value
+    Me.Controls("TipoServico1").Value = rst.Fields("TipoServico").Value
+
+    rst.Close
+    db.Close
+    
+    Exit Sub
+    
+SairSimples:
+    Exit Sub
+End Sub
+
+Private Sub BOTAO_Sair_FRM_Unidades_Click()
+    
+If IsNull(Me.codNF.Value) = False Then
+    Dim i As Integer
+    Dim txtSQL As String
+    Dim rst As Recordset
+    
+    txtSQL = "SELECT TBL_NF_Temp.* FROM TBL_NF_Temp WHERE CodNFTemp = " & Me.codNF.Value & ";"
+    Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+    
+    rst.Edit
+    rst.Fields("CNPJdaNF").Value = Me.Controls("SequencialCNPJ1").Value
+    rst.Fields("TipoNF").Value = Me.Controls("TipoDocFiscal1").Value
+    rst.Fields("NumeroNF").Value = Me.Controls("Numero1").Value
+    rst.Fields("SerieNF").Value = Me.Controls("Serie1").Value
+    rst.Fields("DataEmissaoNF").Value = Me.Controls("DataEmissao1").Value
+    rst.Fields("ValorNF").Value = Me.Controls("ValorDoc1").Value
+    rst.Fields("MunicipioServicoNF").Value = Me.Controls("Municipio1").Value
+    rst.Fields("ValorIsentoISSQN").Value = Me.Controls("IsentoISSQN1").Value
+    rst.Fields("AliquotaNF").Value = Me.Controls("Aliquota1").Value
+    rst.Fields("Destino").Value = Me.Controls("Destino1").Value
+    rst.Fields("TipoServico").Value = Me.Controls("TipoServico1").Value
+    rst.Update
+    rst.Close
+End If
+    DoCmd.Close
+    
+End Sub
+
+
+
+
