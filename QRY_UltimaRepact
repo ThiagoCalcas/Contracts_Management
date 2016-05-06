@@ -1,0 +1,15 @@
+/*
+Trás o número da última repactuação, por contrato
+*/
+
+SELECT 
+TBL_Contratos.NomeContrato, 
+TBL_Contratos.CodContratos, 
+Max(TBL_Repactuacoes.NumeroRepact) AS MáxDeNumeroRepact
+
+FROM 
+TBL_Contratos INNER JOIN TBL_Repactuacoes ON TBL_Contratos.CodContratos = TBL_Repactuacoes.CodContratos
+
+GROUP BY TBL_Contratos.NomeContrato, TBL_Contratos.CodContratos
+
+ORDER BY TBL_Contratos.NomeContrato;
