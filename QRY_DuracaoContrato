@@ -1,0 +1,41 @@
+/*
+Query utilizada em diversos formulários, que apresenta a data de início e fim do contrato, considerando as prorrogações, além do total de meses do contrato
+*/
+
+SELECT 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.NomeContrato, 
+QRY1.DataInicio, 
+QRY2.DataFim, 
+CASE WHEN Day([DataInicio]) = 1 THEN
+    CASE 
+        WHEN Day([DataFim]) = 28 THEN (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])+1
+        WHEN Day([DataFim]) = 29 THEN (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])+1
+        WHEN Day([DataFim]) = 30 THEN (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])+1
+        WHEN Day([DataFim]) = 31 THEN (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])+1
+        ELSE (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio]) END
+    ELSE (Year([DataFim])-Year([DataInicio]))*12+Month([DataFim])-Month([DataInicio])
+END AS Meses
+
+FROM 
+(TBL_Contratos INNER JOIN (
+
+SELECT 
+TBL_Contratos.CodContratos, 
+Min(TBL_Prorrogacoes.ProrrDataInicio) AS DataInicio
+
+FROM 
+TBL_Contratos INNER JOIN TBL_Prorrogacoes ON TBL_Contratos.CodContratos = TBL_Prorrogacoes.CodContratos
+GROUP BY TBL_Contratos.CodContratos
+
+)  AS QRY1 ON TBL_Contratos.CodContratos = QRY1.CodContratos) INNER JOIN (
+
+SELECT 
+TBL_Contratos.CodContratos, 
+Max(TBL_Prorrogacoes.ProrrDataFim) AS DataFim
+
+FROM 
+TBL_Contratos INNER JOIN TBL_Prorrogacoes ON TBL_Contratos.CodContratos = TBL_Prorrogacoes.CodContratos
+GROUP BY TBL_Contratos.CodContratos
+)  AS QRY2 ON TBL_Contratos.CodContratos = QRY2.CodContratos
+WHERE (((TBL_Contratos.Situacao)='Ativo'));
