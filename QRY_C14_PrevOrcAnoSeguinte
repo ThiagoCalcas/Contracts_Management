@@ -1,0 +1,122 @@
+/*
+
+Esta query trás, para o ANO SEGUINTE, uma previsão da dotação orçamentária necessária.
+Para consultar o ANO CORRENTE, utilizar a QRY_C14_PrevOrcAnoCorrente.
+
+Esta query é composta pelas seguintes subQuerys:
+- QRY_MesRepactuacao
+- QRY_ValorMensalLicitacao
+
+A ideia é ver o valor necessário no orçamento por contrato, por mês.
+
+A lógica de cálculo é a seguinte:
+- Se houver Licitação iniciada e valor mensal estimado para o Contrato, considera este valor; caso contrário
+- Se o mês for igual ou maior ao da última Repactuação (ou do contrato), considera a média de pagamentos * índice de ajuste da CCT; caso contrário
+- Se o mês for menor que o da última Repactuação (ou do contrato), considera a média de pagamentos.
+
+*** Atualmente usando média dos 2 últimos meses de competência
+
+*/                                
+
+SELECT 
+TBL_Contratos.CodContratos,                                  /* REVER REGRA DE REPACTUAÇÃO */
+TBL_Contratos.NomeContrato, 
+vencimento,
+ValorMensalLicitacao,
+Media_2_Meses,
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 1 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 1 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS JAN,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 2 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 2 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS FEV,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 3 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 3 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS MAR,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 4 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 4 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS ABR,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 5 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 5 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS MAI,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 6 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 6 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS JUN,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 7 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 7 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS JUL,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 8 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 8 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS AGO,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 9 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 9 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS [SET],
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 10 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 10 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS OUT,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 11 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 11 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS NOV,
+
+CAST ( CASE WHEN DATEPART ( mm , Vencimento ) <= 12 and year ( Vencimento) >= year ( getdate () + 1 ) and ValorMensalLicitacao <>0 then ValorMensalLicitacao 
+WHEN MesRepact >= 12 then Media_2_Meses * ( 1 + ( IndiceCCT / 100 ) ) ELSE Media_2_Meses END AS Money ) AS DEZ,
+
+IndiceCCT
+
+FROM (( TBL_Contratos LEFT JOIN (
+
+/* ******************************************************************************************************************* Inicio QRY_MesRepactuacao
+*/ 
+
+SELECT 
+TBL_Contratos.CodContratos, 
+CASE WHEN DATEPART ( mm , RepactDataInicio) IS NULL THEN 0 ELSE DATEPART ( mm , RepactDataInicio) END AS MesRepact 
+
+FROM 
+(TBL_Contratos INNER JOIN TBL_Repactuacoes ON TBL_Contratos.CodContratos = TBL_Repactuacoes.CodContratos) INNER JOIN (
+
+SELECT 
+TBL_Contratos.NomeContrato, 
+TBL_Contratos.CodContratos, 
+Max(TBL_Repactuacoes.NumeroRepact) AS MáxDeNumeroRepact
+
+FROM 
+TBL_Contratos INNER JOIN TBL_Repactuacoes ON TBL_Contratos.CodContratos = TBL_Repactuacoes.CodContratos
+
+GROUP BY TBL_Contratos.NomeContrato, TBL_Contratos.CodContratos
+
+) AS QRY_UltimaRepact ON (TBL_Contratos.CodContratos = QRY_UltimaRepact.CodContratos) AND (TBL_Repactuacoes.NumeroRepact = QRY_UltimaRepact.MáxDeNumeroRepact)
+
+WHERE (((TBL_Contratos.Situacao)<>'Inativo'))
+
+/* ******************************************************************************************************************* Fim QRY_MesRepactuacao
+*/ 
+
+) AS QRY_MesRepactuacao ON TBL_Contratos.CodContratos = QRY_MesRepactuacao.CodContratos) LEFT JOIN (
+
+
+/* ******************************************************************************************************************* Inicio QRY_ValorMensalLicitacao
+*/ 
+
+SELECT 
+TBL_Contratos.CodContratos, 
+Vencimento,
+SUM( CAST (CASE WHEN PropostaFinal IS NOT NULL THEN PropostaFinal / CASE WHEN TBL_Contratos.Tipo = 'PAE' THEN 24 WHEN TBL_Contratos.Tipo = 'AG' THEN 30 END
+WHEN NegociacaoGILOG IS NOT NULL THEN NegociacaoGILOG / CASE WHEN TBL_Contratos.Tipo = 'PAE' THEN 24 WHEN TBL_Contratos.Tipo = 'AG' THEN 30 END
+WHEN EstimativaCAIXA IS NOT NULL THEN EstimativaCAIXA / CASE WHEN TBL_Contratos.Tipo = 'PAE' THEN 24 WHEN TBL_Contratos.Tipo = 'AG' THEN 30 END
+ELSE 0 END AS Money )) AS ValorMensalLicitacao
+
+FROM
+TBL_Contratos LEFT JOIN TBL_Licitacoes ON TBL_Contratos.SIGES = TBL_Licitacoes.CodContratos 
+
+GROUP BY TBL_Contratos.CodContratos, Vencimento
+
+/* ******************************************************************************************************************* Fim QRY_ValorMensalLicitacao
+*/ 
+
+) AS QRY_ValorMensalLicitacao ON TBL_Contratos.CodContratos = QRY_ValorMensalLicitacao.CodContratos) INNER JOIN TBL_MediaPG ON TBL_Contratos.Compromisso = TBL_MediaPG.Compromisso
+
+, TBL_CCT
+
+WHERE TBL_CCT.AnoCCT = (Year(GETDATE())+1) AND TBL_Contratos.Situacao = 'Ativo'
+;
+
