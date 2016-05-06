@@ -1,0 +1,263 @@
+Option Compare Database
+Option Explicit
+ 
+Private Const TIMEOUT = 60
+
+Public Sub Restart()
+
+Dim s As String
+Dim scriptpath As String
+Dim intfile As String
+
+'Cria um arquivo batch com nome igual ao arquvio & .dbrestart.bat
+scriptpath = "c:\TEMP\dbrestart.bat"
+If Dir(scriptpath, vbNormal) <> "" Then
+    If DateAdd("s", TIMEOUT * 2, FileDateTime(scriptpath)) < Date Then
+        Kill scriptpath
+    Else
+        Application.Quit acQuitSaveAll
+        Exit Sub
+    End If
+End If
+
+s = "taskkill /IM msaccess.exe" & vbCrLf 'Fecha o Access
+s = s & ":TENTADENOVO" & vbCrLf 'Retorna a este ponto enquanto o Access estiver encerrando
+
+If VerificaMaJ <> "Vazio" Then
+    'comando de copiar o arquivo em \\sp0000sr028\Public\7854\cetes\EQUIPE CONTRATOS\GESTÃO DE PAGAMENTOS\Arquivos Access\Gestão de Contratos - Alteração.accdb
+    'e colar no PC do usuário, com mesmo nome e local do arquivo que está sendo executado neste momento
+    s = s & "COPY " & Chr(34) & NomeOrigem & Chr(34) & " " & Chr(34) & NomeDestino & Chr(34) & vbCrLf
+    'esta função copia e cola, sobrescrevendo o arquivo atual com a versão mais atualizada do Front End Access
+End If
+
+'caso o Access ainda esteja em processo de encerramento, o comando de copiar e colar vai trazer o ERRORLEVEL 1
+s = s & "IF ERRORLEVEL 1 GOTO TENTADENOVO" & vbCrLf 'neste caso, retorna e tenta novamente copiar e colar!
+
+s = s & "START " & Chr(34) & Chr(34) & " " & Chr(34) & NomeDestino & Chr(34) & vbCrLf 'Manda abrir novamente o Access
+s = s & "del %0" 'THIS SCRIPT WILL SELF DESTRUCT NAAAAAAOOO!!!
+ 
+'Cria o script batch com o texto acima
+intfile = FreeFile()
+Open scriptpath For Output As #intfile
+Print #intfile, s
+Close #intfile
+
+'Call the script
+s = scriptpath
+Shell s, vbHide
+ 
+'Close the app
+'Application.Quit acQuitSaveAll 'O scritp batch já fecha o arquivo =)
+End Sub
+
+Function VerificaMaJ() As String
+'Função testa as versões deste Front End com o FE existente no servidor
+'A função retorna o local e o nome do FE aqual
+Dim LocalOriginalFrt As String
+Dim DataVersaoAtual
+Dim DataVersaoFEOriginal
+
+Dim rst As DAO.Recordset
+Dim db As DAO.Database
+Set db = CurrentDb
+
+Set rst = db.OpenRecordset("SELECT TBL_Versao.* FROM TBL_Versao;") 'Roda uma query para trazer a data da da versão
+
+'Só se deve utilizar um registro na TBL_Versao!
+'Esta parte trás a data da versão e o local de origem de onde será copiado o FE
+rst.MoveFirst
+DataVersaoAtual = rst.Fields("AData").Value
+LocalOriginalFrt = Nz(rst.Fields("LocalOriginalFrt").Value)
+rst.Close: Set rst = Nothing
+
+If LocalOriginalFrt = "" Then 'se não houver ainda um local para pegar o FE, mantem o atual
+    VerificaMaJ = "Vazio"
+    Exit Function
+End If
+
+If ExisteArquivo(LocalOriginalFrt) = True Then
+    'Verifica a versão do FE original
+    DataVersaoFEOriginal = TrasADataVersao(LocalOriginalFrt)
+    Else
+    'Se não existe, trás "Vazio"
+    VerificaMaJ = "Vazio"
+    Exit Function
+End If
+
+If DataVersaoFEOriginal > DataVersaoAtual Then
+    VerificaMaJ = LocalOriginalFrt
+    Else
+    VerificaMaJ = "Vazio"
+End If
+End Function
+
+Function TrasADataVersao(LocalOriginalFrt)
+'Função que trás a versão do Front End
+    Dim conn, strConnect, rs
+    Dim strsql As String
+    Set conn = CreateObject("ADODB.Connection")
+    strConnect = "Provider=Microsoft.Ace.OLEDB.12.0;Data Source=" & LocalOriginalFrt & ";Persist Security Info=False;"
+    conn.Open strConnect
+    strsql = "SELECT TBL_Versao.AData FROM TBL_Versao"
+    Set rs = conn.Execute(strsql)
+    rs.MoveFirst
+    TrasADataVersao = rs(0)
+    conn.Close
+    Set conn = Nothing
+End Function
+
+Function ExisteArquivo(OArquivo As String) As Boolean
+'O arquivo existe?
+    Dim filesys
+    Set filesys = CreateObject("Scripting.FileSystemObject")
+    If filesys.FileExists(OArquivo) Then
+        ExisteArquivo = True
+    End If
+End Function
+
+Function NomeOrigem()
+
+Dim Letra As String
+Dim caracter As Integer
+NomeOrigem = VerificaMaJ
+For caracter = 1 To Len(NomeOrigem)
+    Letra = Mid(NomeOrigem, caracter, 1)
+    Select Case Letra
+        Case "à"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "…" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "ã"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "Æ" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "â"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "ƒ" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Á"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "µ" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "À"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "·" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Ã"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "Ç" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Â"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "¶" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "é"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "‚" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "ê"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "ˆ" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "É"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & " " & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Ê"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "Ò" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "í"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "¡" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Í"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "Ö" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "ó"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "¢" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "õ"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "ä" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "ô"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "“" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Ó"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "à" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Õ"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "å" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Ô"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "â" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "ú"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "£" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "ü"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & " " & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "û"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "–" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Ú"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "é" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Ü"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "š" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Û"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "ê" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "ç"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "‡" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "Ç"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "€" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "º"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "§" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "ª"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "¦" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+        Case "º"
+            NomeOrigem = Left(NomeOrigem, caracter - 1) & "ø" & Right(NomeOrigem, Len(NomeOrigem) - caracter)
+    End Select
+Next
+
+End Function
+
+Function NomeDestino()
+
+Dim caracter As Integer
+Dim Letra As String
+NomeDestino = Application.CurrentProject.FullName
+For caracter = 1 To Len(NomeDestino)
+    Letra = Mid(NomeDestino, caracter, 1)
+    Select Case Letra
+        Case "à"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "…" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "ã"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "Æ" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "â"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "ƒ" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Á"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "µ" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "À"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "·" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Ã"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "Ç" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Â"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "¶" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "é"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "‚" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "ê"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "ˆ" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "É"
+            NomeDestino = Left(NomeDestino, caracter - 1) & " " & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Ê"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "Ò" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "í"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "¡" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Í"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "Ö" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "ó"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "¢" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "õ"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "ä" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "ô"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "“" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Ó"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "à" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Õ"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "å" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Ô"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "â" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "ú"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "£" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "ü"
+            NomeDestino = Left(NomeDestino, caracter - 1) & " " & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "û"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "–" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Ú"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "é" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Ü"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "š" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Û"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "ê" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "ç"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "‡" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "Ç"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "€" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "º"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "§" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "ª"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "¦" & Right(NomeDestino, Len(NomeDestino) - caracter)
+        Case "º"
+            NomeDestino = Left(NomeDestino, caracter - 1) & "ø" & Right(NomeDestino, Len(NomeDestino) - caracter)
+    End Select
+Next
+
+End Function
+
