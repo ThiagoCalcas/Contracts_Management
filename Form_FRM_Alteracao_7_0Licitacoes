@@ -1,0 +1,422 @@
+Option Compare Database
+
+Private Sub Form_Load()
+'Verifica o nível de acesso do usuário
+TpAcesso = VerificaAcesso()
+If TpAcesso = "OcultaTudo" Or TpAcesso = "CETES - Consulta" Or _
+        TpAcesso = "GEOCE" Or _
+        TpAcesso = "GILOG - Pagamentos" Then
+    DoCmd.Close
+    Exit Sub
+End If
+'Permite alterar e incluir registros
+'(deveria ser automático, mas por algum motivo aleatório não permite
+'em alguns casos)
+Me.AllowAdditions = True
+Me.AllowEdits = True
+Me.AllowDeletions = True
+
+Call Ajuda("Oculta") 'oculta os campos de Ajuda
+Call Botoes("Exibe") 'exibe os botões de navegação
+Call Rever_Campos
+End Sub
+
+Private Sub Form_Current()
+Call Rever_Campos
+End Sub
+
+Private Sub img_Exporta_Click()
+Dim NomeArquivo As String
+NomeArquivo = Exporta("QRY_C13_Licitacoes", True)
+Call TransformaColunaEmNumero(NomeArquivo, 35, 36, 38, 40, 42)
+End Sub
+
+Private Sub QuestionMark_Click() 'Se oculto, exibe os campos de Ajuda e vice-versa
+Call Botoes("Exibe") 'exibe os botões de navegação
+If Me.LinhaHelp1.Visible = False Then
+    Call Ajuda("Exibe")
+Else
+    Call Ajuda("Oculta")
+End If
+End Sub
+
+Private Sub Ajuda(OQueFazer As String)
+Dim VF As Boolean
+If OQueFazer = "Exibe" Then VF = True
+If OQueFazer = "Oculta" Then VF = False
+
+'Linhas e quadros de ajuda que vão aparecer ou ocultar
+Me.LinhaHelp1.Visible = VF
+Me.LinhaHelp2.Visible = VF
+Me.LinhaHelp3.Visible = VF
+Me.LinhaHelp4.Visible = VF
+Me.LinhaHelp5.Visible = VF
+'Me.LinhaHelp6.Visible = VF
+Me.LinhaHelp7.Visible = VF
+Me.LinhaHelp8.Visible = VF
+'Me.LinhaHelp9.Visible = VF
+Me.LinhaHelp10.Visible = VF
+'Me.LinhaHelp16.Visible = VF
+Me.Help1.Visible = VF
+Me.Help2.Visible = VF
+Me.Help3.Visible = VF
+Me.Help4.Visible = VF
+Me.Help5.Visible = VF
+Me.Help6.Visible = VF
+Me.Help7.Visible = VF
+Me.Help8.Visible = VF
+'Me.Help10.Visible = VF
+'Me.Help11.Visible = VF
+End Sub
+
+Private Sub Botoes(OQueFazer As String)
+Dim VF As Boolean
+If OQueFazer = "Exibe" Then VF = True
+If OQueFazer = "Oculta" Then VF = False
+
+'Botões que vão aparecer ou ocultar
+Me.Comando6.Visible = VF
+Me.BOTAO_Excluir_Registro_FRM_Unidades.Visible = VF
+Me.Comando7.Visible = VF
+Me.BOTAO_Salvar_Registro_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_Para_Primeira_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_para_registro_anterior_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_para_proximo_registro_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_para_ultimo_registro_FRM_Unidades.Visible = VF
+End Sub
+
+Private Sub Rever_Campos()
+Dim VF As Boolean
+Dim db As DAO.Database
+Dim rst As DAO.Recordset
+Set db = CurrentDb
+Dim txtSQL As String
+
+If IsNull(Me.SIGESAtual.Value) = False Then
+
+    'Cria uma QRY para atualizar a Data Final do Contrato
+    txtSQL = "SELECT TBL_Licitacoes.CodLicitacoes, QRY__TerminoDoContrato.DataFimContrato " & _
+            "FROM (TBL_Licitacoes LEFT JOIN TBL_Contratos ON TBL_Licitacoes.CodContratos= TBL_Contratos.CodContratos) LEFT JOIN QRY__TerminoDoContrato ON TBL_Contratos.CodContratos = QRY__TerminoDoContrato.CodContratos;"
+    
+    Set rst = db.OpenRecordset(txtSQL)
+    rst.MoveFirst
+    
+    'Acha a linha na QRT
+    Do While rst.Fields("CodLicitacoes").Value <> Me.CodLicitacoes.Value
+        If rst.Fields("CodLicitacoes").Value = Me.CodLicitacoes.Value Then Exit Do
+        rst.MoveNext
+    Loop
+
+    'Altera o campo Data Fim
+    DataFim = rst.Fields("DataFimContrato").Value
+    Me.Vencimento.Value = DataFim
+End If
+
+'Devolve tudo a visível
+Me.EnvioDasPropostas.Visible = True
+Me.Lances.Visible = True
+Me.AceitabilidadeDaProposta.Visible = True
+Me.DataNegociacaoCETES.Visible = True
+Me.AnaliseDocHab.Visible = True
+Me.DataNegociacaoGILOG.Visible = True
+Me.PublicacaoEdital.Visible = True
+Me.RatificacaoEdital.Visible = True
+Me.InclusaoSICLG.Visible = True
+Me.ElaboracaoCI.Visible = True
+Me.Homologacao.Visible = True
+Me.AssinaturaContrato.Visible = True
+Me.Vencedor.Visible = True
+
+If IsNull(Me.AssinaturaContrato.Value) = True Then
+    
+    If IsNull(Me.Homologacao.Value) = True Then
+    Me.AssinaturaContrato.Visible = False
+    
+    If IsNull(Me.AnaliseDocHab.Value) = True Then
+    Me.Homologacao.Visible = False
+    
+    If IsNull(Me.AceitabilidadeDaProposta.Value) = True Then
+    Me.AnaliseDocHab.Visible = False
+    
+    If IsNull(Me.DataNegociacaoGILOG.Value) = True Then
+    Me.DataNegociacaoCETES.Visible = False
+    Me.AceitabilidadeDaProposta.Visible = False
+            
+    If IsNull(Me.Lances.Value) = True Then
+    Me.DataNegociacaoGILOG.Visible = False
+    Me.DataNegociacaoCETES.Visible = False
+                    
+    If IsNull(Me.EnvioDasPropostas.Value) = True Then
+    Me.Vencedor.Visible = False
+    Me.Lances.Visible = False
+                    
+    If IsNull(Me.PublicacaoEdital.Value) = True Then
+    Me.EnvioDasPropostas.Visible = False
+
+    If IsNull(Me.InclusaoSICLG.Value) = True Then
+    Me.RatificacaoEdital.Visible = False
+    Me.PublicacaoEdital.Visible = False
+    
+    If IsNull(Me.ElaboracaoCI.Value) = True Then
+    Me.InclusaoSICLG.Visible = False
+
+    If IsNull(Me.EstimativaQuantitativo.Value) = True Then
+    Me.ElaboracaoCI.Visible = False
+
+    End If
+    End If
+    End If
+    End If
+    End If
+    End If
+    End If
+    End If
+    End If
+    End If
+End If
+
+Me.Tipo.Requery
+Me.UF.Requery
+Me.SIGESAtual.Requery
+Me.Vencimento.Requery
+Me.ListaLicitacoes.Requery
+
+End Sub
+
+Private Sub SIGESAtual_AfterUpdate()
+Call Rever_Campos
+End Sub
+
+Private Sub InclusaoSICLG_AfterUpdate()
+Call Rever_Campos
+End Sub
+
+Private Sub SIGESAtual_Click()
+Call Rever_Campos
+Me.Vencimento.Requery
+Me.ListaLicitacoes.Requery
+Call AjustaMesAnoArt59
+End Sub
+
+Private Sub Tipo_Click()
+Call Rever_Campos
+End Sub
+
+Private Sub UF_Click()
+Call Rever_Campos
+End Sub
+
+Private Sub FiltroRegião_Click()
+Call MontaLista("Regiao")
+End Sub
+
+Private Sub FiltroSituacao_Click()
+Call MontaLista("SituacaoPendencia")
+End Sub
+
+Private Sub FiltroTD_Click()
+Call MontaLista("TempoDecorrido DESC")
+End Sub
+
+Private Sub FiltroTDUE_Click()
+Call MontaLista("TempoDecorridoUltimaEtapa DESC")
+End Sub
+
+Private Sub FiltroTipo_Click()
+Call MontaLista("Tipo")
+End Sub
+
+Private Sub FiltroUF_Click()
+Call MontaLista("UF")
+End Sub
+
+Private Sub FiltroVencimento_Click()
+Call MontaLista("Vencimento")
+End Sub
+
+Private Sub FiltroResponsavel_Click()
+Call MontaLista("Responsavel")
+End Sub
+
+Private Sub cboTipo_Click()
+Call MontaLista
+End Sub
+
+Private Sub cboUF_Click()
+Call MontaLista
+End Sub
+
+Private Sub cboSituacao_Click()
+Call MontaLista
+End Sub
+
+Private Sub cboResponsavel_Click()
+Call MontaLista
+End Sub
+
+Private Sub MontaLista(Optional Ordenar As String)
+Dim txtSQL As String
+Dim TemWhere As Boolean
+TemWhere = False
+
+txtSQL = "SELECT TBL_Licitacoes.CodLicitacoes, TBL_Licitacoes.UF, TBL_Licitacoes.Tipo, TBL_Licitacoes.Regiao, TBL_Licitacoes.SituacaoPendencia, Responsavel, TBL_Licitacoes.Vencimento, TBL_Licitacoes.TempoDecorrido, TBL_Licitacoes.TempoDecorridoUltimaEtapa FROM TBL_Licitacoes "
+
+If IsNull(Me.cboUF.Value) = False Then
+    txtSQL = txtSQL & "WHERE (TBL_Licitacoes.UF)='" & Me.cboUF.Value & "' "
+    TemWhere = True
+End If
+
+If IsNull(Me.cboTipo.Value) = False Then
+    If TemWhere = True Then
+        txtSQL = txtSQL & "AND (TBL_Licitacoes.Tipo)='" & Me.cboTipo.Value & "' "
+    Else
+        txtSQL = txtSQL & "WHERE (TBL_Licitacoes.Tipo)='" & Me.cboTipo.Value & "' "
+    End If
+    TemWhere = True
+End If
+
+If IsNull(Me.cboResponsavel.Value) = False Then
+    If TemWhere = True Then
+        txtSQL = txtSQL & "AND "
+    Else
+        txtSQL = txtSQL & "WHERE "
+    End If
+    TemWhere = True
+    If Me.cboResponsavel.Value = "c000000" Then
+        txtSQL = txtSQL & "((TBL_Licitacoes.Responsavel) Is Null) "
+    Else
+        txtSQL = txtSQL & "(TBL_Licitacoes.Responsavel)='" & Me.cboResponsavel.Value & "' "
+    End If
+End If
+
+If IsNull(Me.cboSituacao.Value) = False Then
+    If TemWhere = True Then
+        If Me.cboSituacao.Value = "Finalizado" Then
+            txtSQL = txtSQL & "AND (TBL_Licitacoes.SituacaoPendencia)='Finalizado' OR (TBL_Licitacoes.SituacaoPendencia)='Cancelado' OR (TBL_Licitacoes.SituacaoPendencia)='Fracassado' OR (TBL_Licitacoes.SituacaoPendencia)='Revogado' "
+        Else
+            txtSQL = txtSQL & "AND (TBL_Licitacoes.SituacaoPendencia)='" & Me.cboSituacao.Value & "' "
+        End If
+    Else
+        If Me.cboSituacao.Value = "Finalizado" Then
+            txtSQL = txtSQL & "WHERE (TBL_Licitacoes.SituacaoPendencia)='Finalizado' OR (TBL_Licitacoes.SituacaoPendencia)='Cancelado' OR (TBL_Licitacoes.SituacaoPendencia)='Fracassado' OR (TBL_Licitacoes.SituacaoPendencia)='Revogado' "
+        Else
+            txtSQL = txtSQL & "WHERE (TBL_Licitacoes.SituacaoPendencia)='" & Me.cboSituacao.Value & "' "
+        End If
+    End If
+    TemWhere = True
+End If
+
+If TemWhere = True Then
+    If IsNull(Me.cboSituacao.Value) = False Then
+        If Me.cboSituacao.Value <> "Finalizado" Then txtSQL = txtSQL '& "AND (TBL_Licitacoes.SituacaoPendencia)<>'Finalizado' AND (TBL_Licitacoes.SituacaoPendencia)<>'Cancelado' AND (TBL_Licitacoes.SituacaoPendencia)<>'Fracassado' AND (TBL_Licitacoes.SituacaoPendencia)<>'Revogado' "
+    Else
+        txtSQL = txtSQL & "AND (TBL_Licitacoes.SituacaoPendencia)<>'Finalizado' AND (TBL_Licitacoes.SituacaoPendencia)<>'Cancelado' AND (TBL_Licitacoes.SituacaoPendencia)<>'Fracassado' AND (TBL_Licitacoes.SituacaoPendencia)<>'Revogado' "
+    End If
+Else
+    txtSQL = txtSQL & "WHERE (TBL_Licitacoes.SituacaoPendencia)<>'Finalizado' AND (TBL_Licitacoes.SituacaoPendencia)<>'Cancelado' AND (TBL_Licitacoes.SituacaoPendencia)<>'Fracassado' AND (TBL_Licitacoes.SituacaoPendencia)<>'Revogado' "
+End If
+
+If Ordenar <> Clear Then
+    txtSQL = txtSQL & "ORDER BY TBL_Licitacoes." & Ordenar & ", "
+
+    Select Case Ordenar
+        Case "UF"
+            txtSQL = txtSQL & "TBL_Licitacoes.Tipo; "
+        Case "Tipo"
+            txtSQL = txtSQL & "TBL_Licitacoes.UF; "
+        Case Else
+            txtSQL = txtSQL & "TBL_Licitacoes.UF, TBL_Licitacoes.Tipo; "
+    End Select
+
+Else
+    txtSQL = txtSQL & "ORDER BY TBL_Licitacoes.UF, TBL_Licitacoes.Tipo; "
+End If
+
+Me.ListaLicitacoes.RowSource = txtSQL
+
+End Sub
+
+Private Sub ListaLicitacoes_Click()
+
+'Ao selecionar uma Licitação, encontra o registro dela
+Call VaiParaRegistro(Me.ListaLicitacoes)
+
+End Sub
+
+Public Sub VaiParaRegistro(CodigoLicitacoes)
+Dim db As DAO.Database
+Dim rst As DAO.Recordset
+Dim txtSQL As String
+Set db = CurrentDb
+
+txtSQL = "SELECT TBL_Licitacoes.* FROM TBL_Licitacoes ORDER BY TBL_Licitacoes.UF, TBL_Licitacoes.Tipo;"
+Set rst = db.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+rst.MoveFirst
+fim = rst.RecordCount
+LinhaForm = 1
+
+Do While Not rst.EOF
+    If CStr(rst.Fields("CodLicitacoes").Value) = CStr(CodigoLicitacoes) Then Exit Do
+    LinhaForm = LinhaForm + 1
+    rst.MoveNext
+Loop
+
+rst.Close
+db.Close
+
+DoCmd.GoToRecord acDataForm, "FRM_Alteracao_7_0Licitacoes", acGoTo, LinhaForm
+
+End Sub
+
+Private Sub cmd_Atualizar_Click()
+Application.Echo False
+Me.ListaLicitacoes.Requery
+CodigoLicitacoes = Me.CodLicitacoes
+Me.Form.Requery
+Call VaiParaRegistro(CodigoLicitacoes)
+Call Rever_Campos
+Application.Echo True
+End Sub
+ 
+Private Sub AjustaMesAnoArt59()
+
+On Error GoTo SairComErro
+
+Dim NumSIGESAtual As String
+Dim txtSQL As String
+Dim MesArt59 As Integer
+Dim AnoArt59 As Integer
+Set db = CurrentDb
+
+NumSIGESAtual = Me.SIGESAtual.Value
+
+txtSQL = "SELECT QRY__FRM_ContratosVisaoGeral.CodContratos, Format(IIf([MesesVigencia8]=0,IIf([MesesVigencia7]=0,IIf([MesesVigencia6]=0,IIf([MesesVigencia5]=0,IIf([MesesVigencia4]=0,IIf([MesesVigencia3]=0,IIf([MesesVigencia2]=0,IIf([MesesVigencia1]=0,[Estimativa2Meses0],[Estimativa2Meses1]),IIf([InicioProrrogacao2]<=Now(),[Estimativa2Meses2],[Estimativa2Meses1])),IIf([InicioProrrogacao3]<=Now(),[Estimativa2Meses3],[Estimativa2Meses2])),IIf([InicioProrrogacao4]<=Now(),[Estimativa2Meses4],[Estimativa2Meses3])),IIf([InicioProrrogacao5]<=Now(),[Estimativa2Meses5],[Estimativa2Meses4])),IIf([InicioProrrogacao6]<=Now(),[Estimativa2Meses6],[Estimativa2Meses5])),IIf([InicioProrrogacao7]<=Now(),[Estimativa2Meses7],[Estimativa2Meses6])),IIf([InicioProrrogacao8]<=Now(),[Estimativa2Meses8],[Estimativa2Meses7])),'Fixed') AS Estimativa2Meses, " & _
+"Format(IIf([MesesVigencia8]=0,IIf([MesesVigencia7]=0,IIf([MesesVigencia6]=0,IIf([MesesVigencia5]=0,IIf([MesesVigencia4]=0,IIf([MesesVigencia3]=0,IIf([MesesVigencia2]=0,IIf([MesesVigencia1]=0,[EstimativaDuracaoMedia0],[EstimativaDuracaoMedia1]),IIf([InicioProrrogacao2]<=Now(),[EstimativaDuracaoMedia2],[EstimativaDuracaoMedia1])),IIf([InicioProrrogacao3]<=Now(),[EstimativaDuracaoMedia3],[EstimativaDuracaoMedia2])),IIf([InicioProrrogacao4]<=Now(),[EstimativaDuracaoMedia4],[EstimativaDuracaoMedia3])),IIf([InicioProrrogacao5]<=Now(),[EstimativaDuracaoMedia5],[EstimativaDuracaoMedia4])),IIf([InicioProrrogacao6]<=Now(),[EstimativaDuracaoMedia6],[EstimativaDuracaoMedia5])),IIf([InicioProrrogacao7]<=Now(),[EstimativaDuracaoMedia7],[EstimativaDuracaoMedia6])),IIf([InicioProrrogacao8]<=Now(),[EstimativaDuracaoMedia8],[EstimativaDuracaoMedia7])),'Fixed') AS EstimativaDuracaoMedia, " & _
+"IIf([MesesVigencia8]=0,IIf([MesesVigencia7]=0,IIf([MesesVigencia6]=0,IIf([MesesVigencia5]=0,IIf([MesesVigencia4]=0,IIf([MesesVigencia3]=0,IIf([MesesVigencia2]=0,IIf([MesesVigencia1]=0,[PgtosRestantesVig0],[PgtosRestantesVig1]),IIf([InicioProrrogacao2]<=Now(),[PgtosRestantesVig2],[PgtosRestantesVig1])),IIf([InicioProrrogacao3]<=Now(),[PgtosRestantesVig3],[PgtosRestantesVig2])),IIf([InicioProrrogacao4]<=Now(),[PgtosRestantesVig4],[PgtosRestantesVig3])),IIf([InicioProrrogacao5]<=Now(),[PgtosRestantesVig5],[PgtosRestantesVig4])),IIf([InicioProrrogacao6]<=Now(),[PgtosRestantesVig6],[PgtosRestantesVig5])),IIf([InicioProrrogacao7]<=Now(),[PgtosRestantesVig7],[PgtosRestantesVig6])),IIf([InicioProrrogacao8]<=Now(),[PgtosRestantesVig8],[PgtosRestantesVig7])) AS MesesRestantes, " & _
+"IIf([MesesVigencia8]=0,IIf([MesesVigencia7]=0,IIf([MesesVigencia6]=0,IIf([MesesVigencia5]=0,IIf([MesesVigencia4]=0,IIf([MesesVigencia3]=0,IIf([MesesVigencia2]=0,IIf([MesesVigencia1]=0,[MesUltimoPgto0],[MesUltimoPgto1]),IIf([InicioProrrogacao2]<=Now(),[MesUltimoPgto2],[MesUltimoPgto1])),IIf([InicioProrrogacao3]<=Now(),[MesUltimoPgto3],[MesUltimoPgto2])),IIf([InicioProrrogacao4]<=Now(),[MesUltimoPgto4],[MesUltimoPgto3])),IIf([InicioProrrogacao5]<=Now(),[MesUltimoPgto5],[MesUltimoPgto4])),IIf([InicioProrrogacao6]<=Now(),[MesUltimoPgto6],[MesUltimoPgto5])),IIf([InicioProrrogacao7]<=Now(),[MesUltimoPgto7],[MesUltimoPgto6])),IIf([InicioProrrogacao8]<=Now(),[MesUltimoPgto8],[MesUltimoPgto7])) AS MesUltimoPgto, " & _
+"IIf([MesesVigencia8]=0,IIf([MesesVigencia7]=0,IIf([MesesVigencia6]=0,IIf([MesesVigencia5]=0,IIf([MesesVigencia4]=0,IIf([MesesVigencia3]=0,IIf([MesesVigencia2]=0,IIf([MesesVigencia1]=0,[AnoUltimoPgto0],[AnoUltimoPgto1]),IIf([InicioProrrogacao2]<=Now(),[AnoUltimoPgto2],[AnoUltimoPgto1])),IIf([InicioProrrogacao3]<=Now(),[AnoUltimoPgto3],[AnoUltimoPgto2])),IIf([InicioProrrogacao4]<=Now(),[AnoUltimoPgto4],[AnoUltimoPgto3])),IIf([InicioProrrogacao5]<=Now(),[AnoUltimoPgto5],[AnoUltimoPgto4])),IIf([InicioProrrogacao6]<=Now(),[AnoUltimoPgto6],[AnoUltimoPgto5])),IIf([InicioProrrogacao7]<=Now(),[AnoUltimoPgto7],[AnoUltimoPgto6])),IIf([InicioProrrogacao8]<=Now(),[AnoUltimoPgto8],[AnoUltimoPgto7])) AS AnoUltimoPgto, " & _
+"IIf((Int([Estimativa2Meses])+[MesUltimoPgto])>12,IIf((Int([Estimativa2Meses])+[MesUltimoPgto])>24,Int([Estimativa2Meses])+[MesUltimoPgto]-24,Int([Estimativa2Meses])+[MesUltimoPgto]-12),Int([Estimativa2Meses])+[MesUltimoPgto]) AS MesArt59, IIf((Int([Estimativa2Meses])+[MesUltimoPgto])>12,IIf((Int([Estimativa2Meses])+[MesUltimoPgto])>24,[AnoUltimoPgto]+2,[AnoUltimoPgto]+1),[AnoUltimoPgto]) AS AnoArt59 " & _
+"FROM (QRY__FRM_ContratosVisaoGeral INNER JOIN QRY_DuracaoContrato ON QRY__FRM_ContratosVisaoGeral.CodContratos = QRY_DuracaoContrato.CodContratos) INNER JOIN ((SELECT TBL_Licitacoes.CodContratos Min(TBL_Licitacoes.SICLG) AS SICLG, Min(TBL_Licitacoes.InclusaoSICLG) AS InclusaoSICLG, TBL_Contratos.Situacao FROM TBL_Licitacoes INNER JOIN TBL_Contratos ON TBL_Licitacoes.CodContratos= TBL_Contratos.SIGES GROUP BY TBL_Licitacoes.CodContratos TBL_Contratos.Situacao " & _
+")  AS QRY_Licitacoes RIGHT JOIN TBL_Contratos ON QRY_Licitacoes.CodContratos = TBL_Contratos.CodContratos) ON QRY__FRM_ContratosVisaoGeral.CodContratos = TBL_Contratos.CodContratos " & _
+"WHERE ((QRY__FRM_ContratosVisaoGeral.CodContratos)=' & NumSIGESAtual & " '); "
+
+Set rst = db.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+rst.MoveFirst
+MesArt59 = CStr(rst.Fields("MesArt59").Value)
+AnoArt59 = CStr(rst.Fields("AnoArt59").Value)
+
+rst.Close
+db.Close
+
+Me.MesMotivoLicitacao.Value = MesArt59
+Me.MesMotivoLicitacao.Requery
+Me.AnoMotivoLicitacao.Value = AnoArt59
+Me.AnoMotivoLicitacao.Requery
+
+Exit Sub
+
+SairComErro:
+End Sub
+
