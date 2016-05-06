@@ -1,0 +1,317 @@
+Option Compare Database
+
+Private Sub cmd_Atualizar_Click()
+'Comandos que atualizam as listas abaixo
+Me.lstAditamentos.Requery
+Me.lstPrecos.Requery
+Me.lstRoteiros.Requery
+Me.lstUnidades.Requery
+Me.lstProrrogacoes.Requery
+Me.lstRepactuacoes.Requery
+End Sub
+
+Private Sub Form_Load()
+'Permite alterar e incluir registros
+'(deveria ser automático, mas por algum motivo aleatório não permite
+'em alguns casos)
+Me.AllowAdditions = True
+Me.AllowEdits = True
+Call Ajuda("Oculta")
+End Sub
+
+Private Sub cmd_Adicionar_Adit_Click()
+'Abre o FRM_Aditamentos, mas coloca o filtro "CodAditamentos= 0" para trazer obrigatoriamente uma consulta
+'sem resultados, vindo um campo em branco
+DoCmd.OpenForm "FRM_Alteracao_5_3CdC_Aditamentos", acNormal, , "CodAditamentos= 0"
+End Sub
+
+Private Sub cmd_Adicionar_Preco_Click()
+'Abre o FRM_Preco (AG ou PAE), mas coloca o filtro "CodPrecos= 0" para trazer obrigatoriamente uma consulta
+'sem resultados, vindo um campo em branco
+Dim Tipo As String
+Tipo = [Forms]![FRM_Alteracao_5_0CdC_Selecionar]![Tipo] 'Verifica qual formulário é o correto
+If Tipo = "PAE" Then
+    DoCmd.OpenForm "FRM_Alteracao_5_9CdC_PrecoPAE", acNormal, , "CodPrecos= 0"
+End If
+If Tipo = "AG" Then
+    DoCmd.OpenForm "FRM_Alteracao_5_8CdC_PrecoAG", acNormal, , "CodPrecos= 0"
+End If
+End Sub
+
+Private Sub cmd_Adicionar_Repact_Click()
+'Abre o FRM_Repactuações, mas coloca o filtro "CodRepactuacao= 0" para trazer obrigatoriamente uma consulta
+'sem resultados, vindo um campo em branco
+DoCmd.OpenForm "FRM_Alteracao_5_4CdC_Repactuacoes", acNormal, , "CodRepactuacoes= 0"
+End Sub
+
+Private Sub cmd_Adicionar_Roteiro_Click()
+'Abre o FRM_Roteiros, mas coloca o filtro "CodMunicipio= 0" para trazer obrigatoriamente uma consulta
+'sem resultados, vindo um campo em branco
+DoCmd.OpenForm "FRM_Alteracao_5_5CdC_Roteiros", acNormal, , "CodRoteiros= 0"
+End Sub
+
+Private Sub cmd_Adicionar_Unidade_Click()
+'Abre o FRM_Unidades (AG ou PAE), mas coloca o filtro "CodUnidades= 0" para trazer obrigatoriamente uma consulta
+'sem resultados, vindo um campo em branco
+Dim Tipo As String
+Tipo = [Forms]![FRM_Alteracao_5_0CdC_Selecionar]![Tipo] 'Verifica qual formulário é o correto
+If Tipo = "PAE" Then
+    DoCmd.OpenForm "FRM_Alteracao_5_7CdC_UnidadePAE", acNormal, , "CodUnidades= 0"
+End If
+If Tipo = "AG" Then
+    DoCmd.OpenForm "FRM_Alteracao_5_6CdC_UnidadeAG", acNormal, , "CodUnidades= 0"
+End If
+End Sub
+
+Private Sub cmd_Adicionar_Prorr_Click()
+'Abre o FRM_Prorrogacao, mas coloca o filtro "CodProrrogacao= 0" para trazer obrigatoriamente uma consulta
+'sem resultados, vindo um campo em branco
+DoCmd.OpenForm "FRM_Alteracao_5_2CdC_Prorrogacoes", acNormal, , "CodProrrogacoes= 0"
+End Sub
+
+Private Sub cmd_Alterar_Prorr_Click()
+'Quando o usuário selecionar uma prorrogação, abre o FRM_Prorrogacao já filtrado
+If Me.lstProrrogacoes.Column(0) <> "" Then
+    DoCmd.OpenForm "FRM_Alteracao_5_2CdC_Prorrogacoes", acNormal, , "CodProrrogacoes= " & Me.lstProrrogacoes
+Else 'Caso não tenha nenhuma prorrogação selecionada
+    MsgBox ("Selecione uma Prorrogação")
+End If
+End Sub
+
+Private Sub cmd_Alterar_Adit_Click()
+'Quando o usuário selecionar um Aditamento, abre o FRM_Aditamentos já filtrado
+If Me.lstAditamentos <> "" Then
+    DoCmd.OpenForm "FRM_Alteracao_5_3CdC_Aditamentos", acNormal, , "CodAditamentos= " & Me.lstAditamentos
+Else 'Caso não tenha nenhum aditamento selecionado
+    MsgBox ("Selecione um Aditamento")
+End If
+End Sub
+
+Private Sub cmd_Alterar_Repact_Click()
+'Quando o usuário selecionar uma Repactuação, abre o FRM_Repactuações já filtrado
+If Me.lstRepactuacoes <> "" Then
+    DoCmd.OpenForm "FRM_Alteracao_5_4CdC_Repactuacoes", acNormal, , "CodRepactuacoes= " & Me.lstRepactuacoes
+Else 'Caso não tenha nenhuma Repactuação selecionada
+    MsgBox ("Selecione uma Repactuação")
+End If
+End Sub
+
+Private Sub cmd_Alterar_Unidade_Click()
+'Quando o usuário selecionar uma Unidade, abre o FRM_Unidades já filtrado
+Dim Tipo As String
+If Me.lstUnidades <> "" Then
+    Tipo = [Forms]![FRM_Alteracao_5_0CdC_Selecionar]![Tipo] 'Verifica qual formulário é o correto
+    If Tipo = "PAE" Then
+        DoCmd.OpenForm "FRM_Alteracao_5_7CdC_UnidadePAE", acNormal, , "CodUnidades= " & Me.lstUnidades
+    End If
+    If Tipo = "AG" Then
+        DoCmd.OpenForm "FRM_Alteracao_5_6CdC_UnidadeAG", acNormal, , "CodUnidades= " & Me.lstUnidades
+    End If
+Else 'Caso não tenha nenhuma unidade selecionada
+    MsgBox ("Selecione uma Unidade")
+End If
+End Sub
+
+Private Sub cmd_Alterar_Preco_Click()
+'Quando o usuário selecionar um Preço, abre o FRM_Precos já filtrado
+If Me.lstPrecos <> "" Then
+    Tipo = [Forms]![FRM_Alteracao_5_0CdC_Selecionar]![Tipo] 'Verifica qual formulário é o correto
+    If Tipo = "PAE" Then
+        DoCmd.OpenForm "FRM_Alteracao_5_9CdC_PrecoPAE", acNormal, , "CodPrecos= " & Me.lstPrecos
+    End If
+    If Tipo = "AG" Then
+        DoCmd.OpenForm "FRM_Alteracao_5_8CdC_PrecoAG", acNormal, , "CodPrecos= " & Me.lstPrecos
+    End If
+Else 'Caso não tenha nenhum preço selecionado
+    MsgBox ("Selecione um Preço")
+End If
+End Sub
+
+Private Sub cmd_Alterar_Roteiro_Click()
+'Quando o usuário selecionar um Roteiro, abre o FRM_Roteiros já filtrado
+If Me.lstRoteiros <> "" Then
+    DoCmd.OpenForm "FRM_Alteracao_5_5CdC_Roteiros", acNormal, , "CodRoteiros= " & Me.lstRoteiros
+Else 'Caso não tenha nenhum roteiro selecionado
+    MsgBox ("Selecione um Roteiro")
+End If
+End Sub
+
+Private Sub IMG_Roteiros_Click()
+'Exporta a QRY_Exporta_InfoGerais_Roteiros para o Excel
+Call Exporta("QRY_Exporta_A51_Roteiros", True)
+End Sub
+
+Private Sub IMG_Unidades_Click()
+'Exporta a QRY_Exporta_InfoGerais_Unidades para o Excel
+Call Exporta("QRY_Exporta_A52_Unidades", True)
+End Sub
+
+Private Sub IMG_Precos_Click()
+'Exporta a QRY_Exporta_InfoGerais_Precos para o Excel
+Dim NomeArquivo As String
+NomeArquivo = Exporta("QRY_Exporta_A53_Precos", True)
+Call TransformaColunaEmNumero(NomeArquivo, 7, 8, 9, 10, 14, 15, 16, 17, 18, 19)
+Call TransformaColunaEmNumero(NomeArquivo, 20, 21, 22, 23, 24)
+End Sub
+
+Private Sub QuestionMark_Click() 'Se oculto, exibe os campos de Ajuda e vice-versa
+If Me.LinhaHelp2.Visible = False Then
+    Call Ajuda("Exibe")
+Else
+    Call Ajuda("Oculta")
+End If
+End Sub
+
+Private Sub Ajuda(OQueFazer As String)
+Dim VF As Boolean
+If OQueFazer = "Exibe" Then VF = True
+If OQueFazer = "Oculta" Then VF = False
+
+'Linhas e quadros de ajuda que vão aparecer ou ocultar
+'Me.LinhaHelp1.Visible = VF
+Me.LinhaHelp2.Visible = VF
+Me.LinhaHelp3.Visible = VF
+Me.LinhaHelp4.Visible = VF
+Me.LinhaHelp5.Visible = VF
+Me.LinhaHelp6.Visible = VF
+Me.LinhaHelp7.Visible = VF
+Me.LinhaHelp8.Visible = VF
+Me.LinhaHelp9.Visible = VF
+Me.LinhaHelp10.Visible = VF
+Me.LinhaHelp11.Visible = VF
+Me.LinhaHelp12.Visible = VF
+'Me.LinhaHelp13.Visible = VF
+Me.LinhaHelp14.Visible = VF
+Me.LinhaHelp15.Visible = VF
+Me.LinhaHelp16.Visible = VF
+Me.LinhaHelp17.Visible = VF
+Me.LinhaHelp18.Visible = VF
+Me.LinhaHelp19.Visible = VF
+Me.LinhaHelp20.Visible = VF
+Me.LinhaHelp21.Visible = VF
+Me.LinhaHelp22.Visible = VF
+Me.LinhaHelp23.Visible = VF
+Me.LinhaHelp24.Visible = VF
+Me.LinhaHelp25.Visible = VF
+Me.LinhaHelp26.Visible = VF
+Me.LinhaHelp27.Visible = VF
+Me.LinhaHelp28.Visible = VF
+Me.LinhaHelp29.Visible = VF
+Me.LinhaHelp30.Visible = VF
+Me.LinhaHelp31.Visible = VF
+Me.LinhaHelp32.Visible = VF
+Me.LinhaHelp33.Visible = VF
+Me.LinhaHelp34.Visible = VF
+Me.LinhaHelp35.Visible = VF
+Me.LinhaHelp36.Visible = VF
+Me.LinhaHelp37.Visible = VF
+Me.LinhaHelp38.Visible = VF
+Me.LinhaHelp39.Visible = VF
+Me.LinhaHelp40.Visible = VF
+Me.LinhaHelp41.Visible = VF
+Me.LinhaHelp42.Visible = VF
+'Me.LinhaHelp43.Visible = VF
+Me.LinhaHelp44.Visible = VF
+Me.LinhaHelp45.Visible = VF
+Me.LinhaHelp46.Visible = VF
+Me.LinhaHelp47.Visible = VF
+Me.LinhaHelp48.Visible = VF
+Me.LinhaHelp49.Visible = VF
+Me.LinhaHelp50.Visible = VF
+Me.LinhaHelp51.Visible = VF
+Me.LinhaHelp52.Visible = VF
+Me.LinhaHelp53.Visible = VF
+Me.LinhaHelp54.Visible = VF
+Me.LinhaHelp55.Visible = VF
+Me.LinhaHelp56.Visible = VF
+Me.LinhaHelp57.Visible = VF
+Me.LinhaHelp58.Visible = VF
+Me.LinhaHelp59.Visible = VF
+Me.LinhaHelp60.Visible = VF
+Me.LinhaHelp61.Visible = VF
+Me.LinhaHelp62.Visible = VF
+Me.LinhaHelp63.Visible = VF
+Me.LinhaHelp64.Visible = VF
+Me.LinhaHelp65.Visible = VF
+Me.LinhaHelp66.Visible = VF
+Me.LinhaHelp67.Visible = VF
+Me.LinhaHelp68.Visible = VF
+Me.LinhaHelp69.Visible = VF
+Me.LinhaHelp70.Visible = VF
+Me.LinhaHelp71.Visible = VF
+Me.LinhaHelp72.Visible = VF
+Me.LinhaHelp73.Visible = VF
+Me.LinhaHelp74.Visible = VF
+Me.LinhaHelp75.Visible = VF
+Me.LinhaHelp76.Visible = VF
+Me.LinhaHelp77.Visible = VF
+Me.LinhaHelp78.Visible = VF
+Me.LinhaHelp79.Visible = VF
+Me.LinhaHelp80.Visible = VF
+Me.LinhaHelp81.Visible = VF
+Me.LinhaHelp82.Visible = VF
+Me.LinhaHelp83.Visible = VF
+Me.LinhaHelp84.Visible = VF
+Me.LinhaHelp85.Visible = VF
+Me.LinhaHelp86.Visible = VF
+Me.LinhaHelp87.Visible = VF
+Me.LinhaHelp88.Visible = VF
+Me.LinhaHelp89.Visible = VF
+Me.LinhaHelp90.Visible = VF
+Me.LinhaHelp91.Visible = VF
+Me.LinhaHelp92.Visible = VF
+Me.LinhaHelp93.Visible = VF
+Me.LinhaHelp94.Visible = VF
+Me.LinhaHelp95.Visible = VF
+Me.LinhaHelp96.Visible = VF
+Me.LinhaHelp97.Visible = VF
+Me.Help1.Visible = VF
+Me.Help2.Visible = VF
+Me.Help3.Visible = VF
+Me.Help4.Visible = VF
+Me.Help5.Visible = VF
+Me.Help6.Visible = VF
+Me.Help7.Visible = VF
+Me.Help8.Visible = VF
+Me.Help9.Visible = VF
+Me.Help10.Visible = VF
+Me.Help11.Visible = VF
+Me.Help12.Visible = VF
+Me.Help13.Visible = VF
+Me.Help14.Visible = VF
+Me.Help15.Visible = VF
+Me.Help16.Visible = VF
+Me.Help17.Visible = VF
+Me.Help18.Visible = VF
+Me.Help19.Visible = VF
+Me.Help20.Visible = VF
+Me.Help21.Visible = VF
+Me.Help22.Visible = VF
+Me.Help23.Visible = VF
+Me.Help24.Visible = VF
+Me.Help25.Visible = VF
+Me.Help26.Visible = VF
+Me.Help27.Visible = VF
+Me.Help28.Visible = VF
+Me.Help29.Visible = VF
+Me.Help30.Visible = VF
+Me.Help31.Visible = VF
+Me.Help32.Visible = VF
+Me.Help33.Visible = VF
+Me.Help34.Visible = VF
+End Sub
+
+Private Sub cmd_ModoTabelaRoteiro_Click()
+'Abre uma query no modo tabela para inserção de dados, pelo usuário, com Ctrl+C/Ctrl+V
+DoCmd.OpenQuery "QRY_A511_AlterarRoteiros", acViewNormal, acEdit
+End Sub
+Private Sub cmd_ModoTabelaUnidade_Click()
+'Abre uma query no modo tabela para inserção de dados, pelo usuário, com Ctrl+C/Ctrl+V
+DoCmd.OpenQuery "QRY_A512_AlterarUnidades", acViewNormal, acEdit
+End Sub
+
+Private Sub cmd_ModoTabelaPreco_Click()
+'Abre uma query no modo tabela para inserção de dados, pelo usuário, com Ctrl+C/Ctrl+V
+DoCmd.OpenQuery "QRY_A513_AlterarPrecos", acViewNormal, acEdit
+End Sub
+
