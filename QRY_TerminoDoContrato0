@@ -1,0 +1,31 @@
+/*
+Esta Query é usada na tela _____________
+E faz parte da QRY__Termino_Do_Contrato
+*/
+
+SELECT 
+TBL_EGTTV.NomeEGTTV, 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.NomeContrato, 
+TBL_Contratos.Tipo, 
+TBL_Contratos.Situacao,
+TBL_Contratos.SIGES, 
+MIN(TBL_Prorrogacoes.ProrrDataInicio) AS MínDeProrrDataInicio,
+MAX(CASE NumeroProrrogacao WHEN 0 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr0, 
+MAX(CASE NumeroProrrogacao WHEN 1 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr1, 
+MAX(CASE NumeroProrrogacao WHEN 2 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr2, 
+MAX(CASE NumeroProrrogacao WHEN 3 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr3, 
+MAX(CASE NumeroProrrogacao WHEN 4 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr4, 
+MAX(CASE NumeroProrrogacao WHEN 5 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr5, 
+MAX(CASE NumeroProrrogacao WHEN 6 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr6, 
+MAX(CASE NumeroProrrogacao WHEN 7 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr7, 
+MAX(CASE NumeroProrrogacao WHEN 8 THEN TBL_Prorrogacoes.ProrrDataFim ELSE 0 END) AS FimProrr8, 
+TBL_Contratos.UF
+
+FROM (TBL_EGTTV INNER JOIN TBL_Contratos ON TBL_EGTTV.CodEGTTV = TBL_Contratos.CodEGTTV) INNER JOIN TBL_Prorrogacoes ON TBL_Contratos.CodContratos = TBL_Prorrogacoes.CodContratos
+
+WHERE ((TBL_Contratos.Situacao)='Ativo')
+
+GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, TBL_Contratos.Tipo, TBL_Contratos.UF, TBL_Contratos.Situacao, SIGES
+;
+
