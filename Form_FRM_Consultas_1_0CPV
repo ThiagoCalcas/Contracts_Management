@@ -1,0 +1,159 @@
+Option Compare Database
+
+Private Sub Form_Load()
+'Verifica o nível de acesso do usuário
+TpAcesso = VerificaAcesso()
+If TpAcesso = "OcultaTudo" Or TpAcesso = "GILOG - Pagamentos" Or TpAcesso = "GEOCE" Then
+    DoCmd.Close
+    Exit Sub
+End If
+'limpa e atualiza os campos abaixo
+Me.cboUF = ""
+Me.cboUF.Requery
+Me.cboTipo = ""
+Me.cboTipo.Requery
+Me.cboEGTTV = ""
+Me.cboEGTTV.Requery
+Me.lstContratos = ""
+Me.lstContratos.Requery
+
+'Permite alterar e incluir registros
+'(deveria ser automático, mas por algum motivo aleatório não permite
+'em alguns casos)
+Me.AllowAdditions = True
+Me.AllowEdits = True
+
+Call Ajuda("Oculta")
+
+End Sub
+
+Private Sub cmdTodas_click()
+'limpa e atualiza os campos abaixo
+Me.cboUF = ""
+Me.cboUF.Requery
+Me.cboTipo = ""
+Me.cboTipo.Requery
+Me.cboEGTTV = ""
+Me.cboEGTTV.Requery
+Me.lstContratos = ""
+Me.lstContratos.Requery
+'Insere uma query no campo lstContratos
+Me.lstContratos.RowSource = "SELECT QRY__TerminoDoContrato.UF, QRY__TerminoDoContrato.NomeEGTTV, QRY__TerminoDoContrato.NomeContrato, format(QRY__TerminoDoContrato.SIGES, '0000/0000') as NumeroContrato, QRY__TerminoDoContrato.Tipo, QRY__TerminoDoContrato.DataFimContrato, Meses As QtdeMeses FROM QRY__TerminoDoContrato ORDER BY QRY__TerminoDoContrato.DataFimContrato;"
+Me.lstContratos.Requery
+Call Monta_EGTTV 'atualiza o campo cboEGTTV
+End Sub
+
+Private Sub cmdLimpar_click()
+'limpa e atualiza os campos abaixo
+Me.cboUF = ""
+Me.cboUF.Requery
+Me.cboTipo = ""
+Me.cboTipo.Requery
+Me.cboEGTTV = ""
+Me.cboEGTTV.Requery
+Me.lstContratos = ""
+Me.lstContratos.Requery
+End Sub
+
+Private Sub cboUF_Click()
+Call Recalcula 'atualiza a qry do campo lstContratos
+Call Monta_EGTTV 'atualiza o campo cboEGTTV
+End Sub
+
+Private Sub cboTipo_Click()
+Call Recalcula 'atualiza a qry do campo lstContratos
+Call Monta_EGTTV 'atualiza o campo cboEGTTV
+End Sub
+
+Private Sub cboEGTTV_click()
+Call Recalcula 'atualiza a qry do campo lstContratos
+End Sub
+
+Sub Recalcula() 'atualiza a qry do campo lstContratos
+Dim txtSQL As String
+Dim SQLwhere As Boolean
+
+'Atualiza os campos abaixo
+Me.cboUF.Requery
+Me.cboTipo.Requery
+Me.cboEGTTV.Requery
+Me.lstContratos = ""
+Me.lstContratos.Requery
+
+'texto ta query
+txtSQL = "SELECT QRY__TerminoDoContrato.UF, QRY__TerminoDoContrato.NomeEGTTV, QRY__TerminoDoContrato.NomeContrato,format(QRY__TerminoDoContrato.SIGES, '000000/0000') as NumeroContrato, QRY__TerminoDoContrato.Tipo, QRY__TerminoDoContrato.DataFimContrato, Meses As QtdeMeses FROM QRY__TerminoDoContrato "
+
+If Me.cboUF <> "" Then 'testa o campo cboUF do Form
+    txtSQL = txtSQL & "WHERE " 'inclui na query o filtro
+    SQLwhere = True 'marca o
+    txtSQL = txtSQL & "(((QRY__TerminoDoContrato.UF)=[Formulários]![FRM_Consultas_1_0CPV]![cboUF]))"
+End If
+If Me.cboTipo <> "" Then
+    If SQLwhere <> True Then
+        txtSQL = txtSQL & "WHERE "
+        SQLwhere = True
+    Else
+        txtSQL = txtSQL & "AND "
+    End If
+    txtSQL = txtSQL & "(((QRY__TerminoDoContrato.Tipo)=[Formulários]![FRM_Consultas_1_0CPV]![cboTipo]))"
+End If
+If Me.cboEGTTV <> "" Then
+    If SQLwhere <> True Then
+        txtSQL = txtSQL & "WHERE "
+    Else
+        txtSQL = txtSQL & "AND "
+    End If
+    txtSQL = txtSQL & "(((QRY__TerminoDoContrato.NomeEGTTV)=[Formulários]![FRM_Consultas_1_0CPV]![cboEGTTV]))"
+End If
+
+txtSQL = txtSQL & "ORDER BY QRY__TerminoDoContrato.DataFimContrato;"
+Me.lstContratos.RowSource = txtSQL
+Me.lstContratos.Requery
+
+End Sub
+
+Private Sub QuestionMark_Click() 'Se oculto, exibe os campos de Ajuda e vice-versa
+If Me.LinhaHelp1.Visible = False Then
+    Call Ajuda("Exibe")
+Else
+    Call Ajuda("Oculta")
+End If
+End Sub
+Private Sub Ajuda(OQueFazer As String)
+Dim VF As Boolean
+If OQueFazer = "Exibe" Then VF = True
+If OQueFazer = "Oculta" Then VF = False
+
+'Linhas e quadros de ajuda que vão aparecer ou ocultar
+Me.LinhaHelp1.Visible = VF
+Me.LinhaHelp2.Visible = VF
+Me.LinhaHelp3.Visible = VF
+Me.LinhaHelp4.Visible = VF
+Me.LinhaHelp5.Visible = VF
+Me.LinhaHelp6.Visible = VF
+Me.Help1.Visible = VF
+Me.Help2.Visible = VF
+Me.Help3.Visible = VF
+Me.Help4.Visible = VF
+End Sub
+Private Sub Monta_EGTTV() 'atualiza o campo cboEGTTV
+txtSQL = "SELECT QRY__TerminoDoContrato.NomeEGTTV FROM QRY__TerminoDoContrato GROUP BY QRY__TerminoDoContrato.NomeEGTTV "
+
+If [Forms]![FRM_Consultas_1_0CPV]![cboUF] <> Clear Then
+    If [Forms]![FRM_Consultas_1_0CPV]![cboTipo] <> Clear Then
+        txtSQL = txtSQL & ", QRY__TerminoDoContrato.UF, QRY__TerminoDoContrato.Tipo HAVING (((QRY__TerminoDoContrato.UF)=[Formulários]![FRM_Consultas_1_0CPV]![cboUF]) AND  " & _
+            "((QRY__TerminoDoContrato.Tipo)=[Formulários]![FRM_Consultas_1_0CPV]![cboTipo]))"
+    Else
+        txtSQL = txtSQL & ", QRY__TerminoDoContrato.UF HAVING (((QRY__TerminoDoContrato.UF)=[Formulários]![FRM_Consultas_1_0CPV]![cboUF]))"
+    End If
+Else
+    If [Forms]![FRM_Consultas_1_0CPV]![cboTipo] <> Clear Then
+        txtSQL = txtSQL & ", QRY__TerminoDoContrato.Tipo HAVING (((QRY__TerminoDoContrato.Tipo)=[Formulários]![FRM_Consultas_1_0CPV]![cboTipo]))"
+    End If
+End If
+txtSQL = txtSQL & ";"
+Me.cboEGTTV.RowSource = txtSQL
+End Sub
+
+
+
