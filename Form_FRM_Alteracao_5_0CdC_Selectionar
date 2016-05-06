@@ -1,0 +1,59 @@
+Option Compare Database
+
+Private Sub Form_Load()
+'Verifica o nível de acesso do usuário
+TpAcesso = VerificaAcesso()
+If TpAcesso = "OcultaTudo" Or TpAcesso = "CETES - Consulta" Or _
+        TpAcesso = "GEOCE" Or _
+        TpAcesso = "GILOG - Pagamentos" Then
+    DoCmd.Close
+    Exit Sub
+End If
+'Permite alterar e incluir registros
+'(deveria ser automático, mas por algum motivo aleatório não permite
+'em alguns casos)
+Me.AllowAdditions = True
+Me.AllowEdits = True
+
+'Limpa e atualiza os outros campos
+Me.UF = "" 'limpa campo UF
+Me.UF.Requery 'atualiza campo UF
+Me.Tipo = "" 'limpa campo Tipo
+Me.Tipo.Requery 'atualiza campo Tipo
+Me.cbo_NomeContrato.RowSource = "" 'limpa campo cbo_NomeContrato
+Me.cbo_NomeContrato.Requery 'atualiza campo cbo_NomeContrato
+End Sub
+
+Private Sub cmd_Continuar_Click()
+'Abre o formulário Alterar InfoGerais
+DoCmd.OpenForm "FRM_Alteracao_5_1CdC_InfoGerais", acNormal, , , acFormReadOnly
+End Sub
+
+Private Sub Form_Close()
+Me.cbo_NomeContrato.RowSource = "" 'limpa campo cbo_NomeContrato
+End Sub
+
+Private Sub UF_Click()
+'Limpa e atualiza os outros campos
+Me.UF.Requery
+Me.Tipo = ""
+Me.Tipo.Requery
+Me.cbo_NomeContrato = ""
+Me.cbo_NomeContrato.Requery
+Me.cbo_NomeContrato.RowSource = ""
+End Sub
+
+Private Sub Tipo_Click()
+Me.Tipo.Requery 'atualiza o campo Tipo
+
+'Ao selecionar UF e Tipo, insere no campo cbo_NomeContrato uma QRY que,
+'da TBL_Contratos, trás o código do Contrato (coluna oculta no combo)
+'e o nome do Contrato (valor exibido)
+Me.cbo_NomeContrato.RowSource = "SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, format(SIGES,'000000/0000') AS NumContrato FROM TBL_Contratos WHERE (((TBL_Contratos.Tipo)=[Formulários]![FRM_Alteracao_5_0CdC_Selecionar]![Tipo]) AND ((TBL_Contratos.UF)=[Formulários]![FRM_Alteracao_5_0CdC_Selecionar]![UF]) AND ((TBL_Contratos.Situacao)='Ativo'));"
+Me.cbo_NomeContrato = "" 'limpa a seleção
+Me.cbo_NomeContrato.Requery 'atualiza o combo
+End Sub
+
+
+
+
