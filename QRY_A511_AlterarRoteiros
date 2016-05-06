@@ -1,0 +1,4 @@
+SELECT TBL_Roteiros.CodRoteiros, TBL_Roteiros.CodContratos, TBL_Roteiros.UF, TBL_Roteiros.[Municipio / Roteiro], TBL_Roteiros.KM, TBL_Roteiros.CodBases
+FROM TBL_Roteiros
+WHERE (((TBL_Roteiros.CodContratos)=[Forms]![FRM_Alteracao_5_0CdC_Selecionar]![cbo_NomeContrato]))
+ORDER BY TBL_Roteiros.[Municipio / Roteiro];
