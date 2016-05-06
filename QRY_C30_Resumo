@@ -1,0 +1,11 @@
+SELECT TBL_Contratos.CodContratos, TBL_Contratos.Tipo, TBL_Contratos.UF, TBL_Contratos.NomeContrato, TBL_Contratos.Situacao, Format(TBL_Contratos.SIGES,'000000\/0000') AS NumeroContrato, Format(TBL_Contratos.Processo,'0000-00-0000-00/0000') AS Processo, TBL_Contratos.Compromisso, TBL_GILOG.SiglaGILOG, TBL_EGTTV.NomeEGTTV, QRY_DataContrato.InicioContratado, QRY_DataContrato.FimContratado, QRY__TerminoDoContrato.DataFimContrato, [ValorGlobal0]+[ValorGlobal1]+[ValorGlobal2]+[ValorGlobal3]+[ValorGlobal4]+[ValorGlobal5]+[ValorGlobal6]+[ValorGlobal7]+[ValorGlobal8] AS ValorContratado, [ValorAdit0]+[ValorAdit1]+[ValorAdit2]+[ValorAdit3]+[ValorAdit4]+[ValorAdit5]+[ValorAdit6]+[ValorAdit7]+[ValorAdit8] AS ValorAditivo, [ValorContratado]+[ValorAditivo] AS ValorGlobal, Format(Nz([SomaDeValorTotal0]+[SomaDeValorTotal1]+[SomaDeValorTotal2]+[SomaDeValorTotal3]+[SomaDeValorTotal4]+[SomaDeValorTotal5]+[SomaDeValorTotal6]+[SomaDeValorTotal7]+[SomaDeValorTotal8],0),"Currency") AS ValorPago, [ValorPago]/[ValorGlobal] AS [%_Pago], [ValorGlobal]-[ValorPago] AS Saldo
+FROM TBL_GILOG RIGHT JOIN ((SELECT 
+TBL_Contratos.CodContratos, 
+TBL_Prorrogacoes.ProrrDataInicio AS InicioContratado, 
+TBL_Prorrogacoes.ProrrDataFim AS FimContratado 
+
+FROM TBL_Prorrogacoes INNER JOIN TBL_Contratos ON TBL_Prorrogacoes.CodContratos = TBL_Contratos.CodContratos 
+WHERE (((TBL_Prorrogacoes.NumeroProrrogacao)=0))
+
+)  AS QRY_DataContrato INNER JOIN (QRY__PagamentoPorContrato RIGHT JOIN (QRY_ValorGlobalPorContrato_SQL INNER JOIN ((QRY__TerminoDoContrato INNER JOIN TBL_Contratos ON QRY__TerminoDoContrato.CodContratos = TBL_Contratos.CodContratos) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV) ON QRY_ValorGlobalPorContrato_SQL.CodContratos = TBL_Contratos.CodContratos) ON QRY__PagamentoPorContrato.CodContratos = TBL_Contratos.CodContratos) ON QRY_DataContrato.CodContratos = TBL_Contratos.CodContratos) ON TBL_GILOG.CodGILOG = TBL_Contratos.CodGILOG
+ORDER BY TBL_Contratos.NomeContrato;
