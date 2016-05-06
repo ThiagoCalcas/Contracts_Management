@@ -1,0 +1,46 @@
+Option Compare Database
+
+Public Function onStart()
+'O Access, ao abrir, irá rodar uma macro que chama esta função
+Call Iniciar
+End Function
+
+Public Sub Iniciar()
+DoCmd.SetWarnings False 'Tira os avisos que atrapalham a execução da macro
+
+If Left(Application.CurrentProject.Path, 1) <> "C" Then 'Testa para ver se o usuário está tentando abrir o FE no servidor
+    MsgBox ("Favor não utilizar a versão do Access Front End do servidor." & vbCrLf & _
+            "Você deve copiar esta versão e colar em seu computador." & vbCrLf & _
+            "Este arquivo será fechado.")
+    Application.Quit
+End If
+
+DoCmd.OpenQuery "QRY_UltimaRepact" 'Abre uma QRY para fazer a validação no servidor SQL
+DoCmd.Close 'E fecha essa qry
+
+Call DeleteRef("Excel") 'Remove a referência do Excel, para evitar que dê problema no Office 2010
+Call AddWS 'Adiciona a Referencia Excel correta (Access 2010 está tentando trazer a ref 15, quando o correto é 14)
+Call Continua_Iniciar 'Separei essa macro para evitar problema da Ref. Excel com o código LEFT
+
+End Sub
+
+Private Sub Continua_Iniciar()
+
+Call EscondePainelNavegacao 'Para usuários em geral, oculta o painel de navegação
+
+'Abre o FRM_Menu
+DoCmd.OpenForm "FRM_Menu", acNormal, , , acFormReadOnly
+
+End Sub
+Public Sub AddWS()
+'Cria a referencia pro Office14 ou Office15            'C:\Program Files\Microsoft Office\Office14
+If Application.Version = "14.0" Then ReferenceFromFile "C:\Program Files\Microsoft Office\Office14\Excel.exe"
+If Application.Version = "15.0" Then ReferenceFromFile "C:\Program Files\Microsoft Office\Office15\Excel.exe"
+End Sub
+
+Private Sub EscondePainelNavegacao() 'Esconde o painel de navegação
+DoCmd.NavigateTo "acNavigationCategoryObjectType"
+DoCmd.RunCommand acCmdWindowHide
+End Sub
+
+
