@@ -1,0 +1,414 @@
+SELECT
+QRY_VGG2.CodContratos, 
+QRY_VGG2.NomeContrato,
+QRY_VGG2.Situacao, 
+QRY_VGG2.NumeroProrrogacao, 
+QRY_VGG2.QProrrDataInicio, 
+QRY_VGG2.QProrrDataFim, 
+QRY_VGG2.CodRepactuacoes, 
+QRY_VGG2.NumeroRepact, 
+QRY_VGG2.QRepactDataInicio, 
+QRY_VGG2.QRepactDataFim, 
+QRY_VGG2.CodAditamentos, 
+QRY_VGG2.NumeroAditamento, 
+QRY_VGG2.QAditDataInicio,
+QRY_VGG2.QAditDataFim, 
+QRY_VGG2.SomaDeVlrTotal, 
+QRY_VGG2.InicioRepact,
+QRY_VGG2.FimRepact,
+QRY_VGG2.InicioProrr,
+QRY_VGG2.FimProrr,
+QRY_VGG2.InicioAdit,
+QRY_VGG2.FimAdit,
+QRY_VGG2.QDiasRepact,
+QRY_VGG2.QMesesRepact,
+QRY_VGG2.QDiasProrr,
+QRY_VGG2.QMesesProrr,
+QRY_VGG2.QDiasAdit,
+QRY_VGG2.QMesesAdit,
+ValorRepact,
+ValorProrr + CASE WHEN NumeroRepact = 0 THEN AjusteVLRGlobal ELSE 0 END AS ValorProrr,
+ValorGlobal + CASE WHEN NumeroRepact = 0 THEN AjusteVLRGlobal ELSE 0 END AS ValorGlobal,
+ValorAdit
+
+FROM (
+
+SELECT
+QRY_VGG1.CodContratos, 
+QRY_VGG1.NomeContrato,
+QRY_VGG1.Situacao, 
+QRY_VGG1.NumeroProrrogacao, 
+QRY_VGG1.QProrrDataInicio, 
+QRY_VGG1.QProrrDataFim, 
+QRY_VGG1.CodRepactuacoes, 
+QRY_VGG1.NumeroRepact, 
+QRY_VGG1.QRepactDataInicio, 
+QRY_VGG1.QRepactDataFim, 
+QRY_VGG1.CodAditamentos, 
+QRY_VGG1.NumeroAditamento, 
+QRY_VGG1.QAditDataInicio,
+QRY_VGG1.QAditDataFim, 
+CAST( QRY_VGG1.SomaDeVlrTotal AS money) AS SomaDeVlrTotal, 
+QRY_VGG1.InicioRepact,
+QRY_VGG1.FimRepact,
+QRY_VGG1.InicioProrr,
+QRY_VGG1.FimProrr,
+QRY_VGG1.InicioAdit,
+QRY_VGG1.FimAdit,
+QRY_VGG1.QDiasRepact,
+QRY_VGG1.QMesesRepact,
+QRY_VGG1.QDiasProrr,
+QRY_VGG1.QMesesProrr,
+QRY_VGG1.QDiasAdit,
+QRY_VGG1.QMesesAdit,
+
+CAST( ( QMesesRepact + (QDiasRepact / 30) ) * SomaDeVlrTotal AS money) AS ValorRepact,
+
+CAST( ( QMesesProrr + (QDiasProrr / 30) ) * SomaDeVlrTotal AS money) AS ValorProrr,
+
+CAST( ( QMesesRepact + (QDiasRepact / 30) ) * SomaDeVlrTotal +
+( QMesesProrr + (QDiasProrr / 30) ) * SomaDeVlrTotal AS money) AS ValorGlobal,
+
+CAST( ( QMesesAdit + (QDiasAdit / 30) ) * SomaDeVlrTotal AS money) AS ValorAdit
+
+FROM (
+SELECT
+QRY_VGG0.CodContratos, 
+QRY_VGG0.NomeContrato,
+QRY_VGG0.Situacao, 
+QRY_VGG0.NumeroProrrogacao, 
+QRY_VGG0.QProrrDataInicio, 
+QRY_VGG0.QProrrDataFim, 
+QRY_VGG0.CodRepactuacoes, 
+QRY_VGG0.NumeroRepact, 
+QRY_VGG0.QRepactDataInicio, 
+QRY_VGG0.QRepactDataFim, 
+QRY_VGG0.CodAditamentos, 
+QRY_VGG0.NumeroAditamento, 
+QRY_VGG0.QAditDataInicio,
+QRY_VGG0.QAditDataFim, 
+QRY_VGG0.SomaDeVlrTotal, 
+QRY_VGG0.InicioRepact,
+QRY_VGG0.FimRepact,
+QRY_VGG0.InicioProrr,
+QRY_VGG0.FimProrr,
+QRY_VGG0.InicioAdit,
+QRY_VGG0.FimAdit,
+
+CAST ( (CASE WHEN DATEPART (year , InicioRepact) =1900 THEN 0
+          WHEN InicioRepact = FimRepact THEN 0
+          ELSE CASE WHEN CASE WHEN DATEPART (mm,FimRepact) = 2 THEN CASE WHEN DATEPART (day,FimRepact) =28 THEN 30 WHEN DATEPART (day,FimRepact) =29 THEN 30 ELSE DATEPART (day,FimRepact) END ELSE CASE WHEN DATEPART (day,FimRepact) =31 THEN 30 ELSE DATEPART (day,FimRepact) END END - DATEPART ( day , InicioRepact ) + 1 < 0 THEN
+                    CASE WHEN DATEPART (mm,FimRepact) = 2 THEN CASE WHEN DATEPART (day,FimRepact) =28 THEN 30 WHEN DATEPART (day,FimRepact) =29 THEN 30 ELSE DATEPART (day,FimRepact) END ELSE CASE WHEN DATEPART (day,FimRepact) =31 THEN 30 ELSE DATEPART (day,FimRepact) END END - DATEPART ( day , InicioRepact ) + 31
+                    ELSE CASE WHEN DATEPART (mm,FimRepact) = 2 THEN CASE WHEN DATEPART (day,FimRepact) =28 THEN 30 WHEN DATEPART (day,FimRepact) =29 THEN 30 ELSE DATEPART (day,FimRepact) END ELSE CASE WHEN DATEPART (day,FimRepact) =31 THEN 30 ELSE DATEPART (day,FimRepact) END END - DATEPART ( day , InicioRepact ) + 1
+          END
+END) AS numeric (10,2)) AS QDiasRepact,
+
+CAST ( (CASE WHEN DATEPART (year , InicioRepact) =1900 THEN 0
+          ELSE CASE WHEN (DATEPART (day , FimRepact) - DATEPART (day , InicioRepact) + 1) < 0 THEN
+                    DATEPART (mm , FimRepact) - DATEPART (mm , InicioRepact) + ( DATEPART (year , FimRepact) - DATEPART (year , InicioRepact) ) * 12 - 1
+                    ELSE DATEPART (mm , FimRepact) - DATEPART (mm , InicioRepact) + ( DATEPART (year , FimRepact) - DATEPART (year , InicioRepact) ) * 12
+          END
+END) AS numeric (10,2)) AS QMesesRepact,
+
+CAST ( (CASE WHEN DATEPART (year , InicioProrr) =1900 THEN 0
+          WHEN InicioProrr = FimProrr THEN 0
+          ELSE CASE WHEN CASE WHEN DATEPART (mm,FimProrr) = 2 THEN CASE WHEN DATEPART (day,FimProrr) =28 THEN 30 WHEN DATEPART (day,FimProrr) =29 THEN 30 ELSE DATEPART (day,FimProrr) END ELSE CASE WHEN DATEPART (day,FimProrr) =31 THEN 30 ELSE DATEPART (day,FimProrr) END END - DATEPART ( day , InicioProrr ) + 1 < 0 THEN
+                    CASE WHEN DATEPART (mm,FimProrr) = 2 THEN CASE WHEN DATEPART (day,FimProrr) =28 THEN 30 WHEN DATEPART (day,FimProrr) =29 THEN 30 ELSE DATEPART (day,FimProrr) END ELSE CASE WHEN DATEPART (day,FimProrr) =31 THEN 30 ELSE DATEPART (day,FimProrr) END END - DATEPART ( day , InicioProrr ) + 31
+                    ELSE CASE WHEN DATEPART (mm,FimProrr) = 2 THEN CASE WHEN DATEPART (day,FimProrr) =28 THEN 30 WHEN DATEPART (day,FimProrr) =29 THEN 30 ELSE DATEPART (day,FimProrr) END ELSE CASE WHEN DATEPART (day,FimProrr) =31 THEN 30 ELSE DATEPART (day,FimProrr) END END - DATEPART ( day , InicioProrr ) + 1
+          END
+END) AS numeric (10,2)) AS QDiasProrr,
+
+CAST ( (CASE WHEN DATEPART (year , InicioProrr) =1900 THEN 0
+          ELSE CASE WHEN (DATEPART (day , FimProrr) - DATEPART (day , InicioProrr) + 1) < 0 THEN
+                    DATEPART (mm , FimProrr) - DATEPART (mm , InicioProrr) + ( DATEPART (year , FimProrr) - DATEPART (year , InicioProrr) ) * 12 - 1
+                    ELSE DATEPART (mm , FimProrr) - DATEPART (mm , InicioProrr) + ( DATEPART (year , FimProrr) - DATEPART (year , InicioProrr) ) * 12
+          END
+END) AS numeric (10,2)) AS QMesesProrr,
+
+CAST ( (CASE WHEN DATEPART (year , InicioAdit) =1900 THEN 0
+          WHEN InicioAdit = FimAdit THEN 0
+          ELSE CASE WHEN CASE WHEN DATEPART (mm,FimAdit) = 2 THEN CASE WHEN DATEPART (day,FimAdit) =28 THEN 30 WHEN DATEPART (day,FimAdit) =29 THEN 30 ELSE DATEPART (day,FimAdit) END ELSE CASE WHEN DATEPART (day,FimAdit) =31 THEN 30 ELSE DATEPART (day,FimAdit) END END - DATEPART ( day , InicioAdit ) + 1 < 0 THEN
+                    CASE WHEN DATEPART (mm,FimAdit) = 2 THEN CASE WHEN DATEPART (day,FimAdit) =28 THEN 30 WHEN DATEPART (day,FimAdit) =29 THEN 30 ELSE DATEPART (day,FimAdit) END ELSE CASE WHEN DATEPART (day,FimAdit) =31 THEN 30 ELSE DATEPART (day,FimAdit) END END - DATEPART ( day , InicioAdit ) + 31
+                    ELSE CASE WHEN DATEPART (mm,FimAdit) = 2 THEN CASE WHEN DATEPART (day,FimAdit) =28 THEN 30 WHEN DATEPART (day,FimAdit) =29 THEN 30 ELSE DATEPART (day,FimAdit) END ELSE CASE WHEN DATEPART (day,FimAdit) =31 THEN 30 ELSE DATEPART (day,FimAdit) END END - DATEPART ( day , InicioAdit ) + 1
+          END
+END) AS numeric (10,2)) AS QDiasAdit,
+
+CAST ( (CASE WHEN DATEPART (year , InicioAdit) =1900 THEN 0
+          ELSE CASE WHEN (DATEPART (day , FimAdit) - DATEPART (day , InicioAdit) + 1) < 0 THEN
+                    DATEPART (mm , FimAdit) - DATEPART (mm , InicioAdit) + ( DATEPART (year , FimAdit) - DATEPART (year , InicioAdit) ) * 12 - 1
+                    ELSE DATEPART (mm , FimAdit) - DATEPART (mm , InicioAdit) + ( DATEPART (year , FimAdit) - DATEPART (year , InicioAdit) ) * 12
+          END
+END) AS numeric (10,2)) AS QMesesAdit
+
+FROM (SELECT 
+QRY_DC.CodContratos, 
+QRY_DC.NomeContrato,
+QRY_DC.Situacao, 
+QRY_DC.NumeroProrrogacao, 
+QRY_DC.QProrrDataInicio, 
+QRY_DC.QProrrDataFim, 
+QRY_DC.CodRepactuacoes, 
+TBL_Repactuacoes.NumeroRepact, 
+QRY_DC.QRepactDataInicio, 
+QRY_DC.QRepactDataFim, 
+QRY_DC.CodAditamentos, 
+TBL_Aditamentos.NumeroAditamento, 
+QRY_DC.QAditDataInicio, 
+QRY_DC.QAditDataFim, 
+QRY_VTSPC.SomaDeVlrTotal, 
+
+(CASE WHEN NumeroRepact = 0 THEN 0
+          WHEN NumeroAditamento >= 1 THEN 0
+          WHEN QRepactDataInicio > QProrrDataFim THEN 0
+          WHEN QRepactDataFim < QProrrDataInicio THEN 0
+          WHEN QAditDataInicio > QRepactDataFim THEN 0
+          ELSE CASE WHEN QRepactDataInicio >= QProrrDataInicio THEN 
+                    CASE WHEN QRepactDataInicio >= QAditDataInicio THEN QRepactDataInicio ELSE QAditDataInicio END 
+                    ELSE CASE WHEN QProrrDataInicio >= QAditDataInicio THEN QProrrDataInicio ELSE QAditDataInicio END
+          END
+END) As InicioRepact,
+
+(CASE WHEN NumeroRepact = 0 THEN 0
+          WHEN NumeroAditamento >= 1 THEN 0
+          WHEN QRepactDataInicio > QProrrDataFim THEN 0
+          WHEN QRepactDataFim < QProrrDataInicio THEN 0
+          WHEN QAditDataInicio > QRepactDataFim THEN 0
+          ELSE CASE WHEN QRepactDataFim <= QProrrDataFim THEN QRepactDataFim ELSE QProrrDataFim END
+END) AS FimRepact,
+
+(CASE WHEN NumeroAditamento >= 1 THEN 0
+          WHEN NumeroRepact <> 0 THEN 0
+          WHEN QRepactDataInicio > QProrrDataFim THEN 0
+          WHEN QRepactDataFim < QProrrDataInicio THEN 0
+          WHEN QAditDataInicio > QRepactDataFim THEN 0
+          ELSE CASE WHEN QRepactDataInicio >= QProrrDataInicio THEN
+                    CASE WHEN QRepactDataInicio >= QAditDataInicio THEN QRepactDataInicio ELSE QAditDataInicio END
+                    ELSE CASE WHEN QProrrDataInicio >= QAditDataInicio THEN QProrrDataInicio ELSE QAditDataInicio END
+          END
+END) AS InicioProrr,
+
+(CASE WHEN NumeroAditamento >=1 THEN 0
+          WHEN NumeroRepact <> 0 THEN 0
+          WHEN QRepactDataInicio > QProrrDataFim THEN 0
+          WHEN QRepactDataFim < QProrrDataInicio THEN 0
+          WHEN QAditDataInicio > QRepactDataFim THEN 0
+          ELSE CASE WHEN QRepactDataFim <= QProrrDataFim THEN QRepactDataFim ELSE QProrrDataFim END
+END)  AS FimProrr,
+
+(CASE WHEN NumeroAditamento <1 THEN 0
+          WHEN QAditDataInicio > QProrrDataFim THEN 0
+          WHEN QAditDataFim < QProrrDataInicio THEN 0
+          WHEN QAditDataInicio > QRepactDataFim THEN 0
+          WHEN QAditDataFim < QRepactDataInicio THEN 0
+          WHEN QRepactDataInicio > QProrrDataFim THEN 0
+          WHEN QProrrDataInicio > QRepactDataFim THEN 0
+          ELSE CASE WHEN QAditDataInicio >= QProrrDataInicio THEN
+                    CASE WHEN QAditDataInicio >= QRepactDataInicio THEN QAditDataInicio ELSE QRepactDataInicio END
+                    ELSE CASE WHEN QAditDataInicio >= QRepactDataInicio THEN QProrrDataInicio
+                              ELSE CASE WHEN QRepactDataInicio >= QProrrDataInicio THEN QRepactDataInicio ELSE QProrrDataInicio END
+                    END
+          END
+END) AS InicioAdit,
+
+(CASE WHEN NumeroAditamento <1 THEN 0
+          WHEN QAditDataInicio > QProrrDataFim THEN 0
+          WHEN QAditDataFim < QProrrDataInicio THEN 0
+          WHEN QAditDataInicio > QRepactDataFim THEN 0
+          WHEN QAditDataFim < QRepactDataInicio THEN 0
+          WHEN QRepactDataInicio > QProrrDataFim THEN 0
+          WHEN QProrrDataInicio > QRepactDataFim THEN 0
+          ELSE CASE WHEN QAditDataFim <= QRepactDataFim THEN
+                    CASE WHEN QAditDataFim <= QProrrDataFim THEN QAditDataFim ELSE QProrrDataFim END
+                    ELSE CASE WHEN QRepactDataFim <= QProrrDataFim THEN QRepactDataFim ELSE QProrrDataFim END
+          END
+END) AS FimAdit
+
+
+
+FROM ((
+(SELECT 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.NomeContrato,
+TBL_Contratos.Situacao, 
+TBL_Prorrogacoes.NumeroProrrogacao, 
+TBL_Prorrogacoes.ProrrDataInicio AS QProrrDataInicio, 
+TBL_Prorrogacoes.ProrrDataFim AS QProrrDataFim, 
+QRY_DR.CodRepactuacoes, 
+QRY_DR.RepactDataInicio as QRepactDataInicio, 
+QRY_DR.RepactDataFim as QRepactDataFim, 
+QRY_DA.CodAditamentos, 
+QRY_DA.AditDataInicio as QAditDataInicio, 
+QRY_DA.AditDataFim AS QAditDataFim,
+
+(CASE WHEN ProrrDataInicio = ProrrDataFim THEN 0 
+           WHEN ( (CASE WHEN DATEPART ( day , ProrrDataFim) = 31 THEN 30
+                      WHEN DATEPART ( day , ProrrDataFim) = 29 THEN 30
+                      WHEN DATEPART ( day , ProrrDataFim) = 28 THEN 30
+                     ELSE DATEPART ( day , ProrrDataFim) END) - DATEPART ( day , ProrrDataInicio ) + 1 ) < 0 THEN (30 + 
+                                                       (CASE WHEN DATEPART ( day , ProrrDataFim) = 31 THEN 30
+                                                       WHEN DATEPART ( day , ProrrDataFim) = 29 THEN 30
+                                                       WHEN DATEPART ( day , ProrrDataFim) = 28 THEN 30
+                                                       ELSE DATEPART ( day , ProrrDataFim) END) - DATEPART (day , ProrrDataInicio) + 1 ) 
+           ELSE ( (CASE WHEN DATEPART ( day , ProrrDataFim) = 31 THEN 30
+                      WHEN DATEPART ( day , ProrrDataFim) = 29 THEN 30
+                      WHEN DATEPART ( day , ProrrDataFim) = 28 THEN 30
+                      ELSE DATEPART ( day , ProrrDataFim) END) - DATEPART ( Day , ProrrDataInicio) + 1 )
+END)
+AS DiasProrr,
+
+(CASE WHEN ProrrDataInicio = 0 THEN 0
+           WHEN (CASE WHEN DATEPART ( day , ProrrDataFim) = 31 THEN 30
+                      WHEN DATEPART ( day , ProrrDataFim) = 29 THEN 30
+                      WHEN DATEPART ( day , ProrrDataFim) = 28 THEN 30
+                     ELSE DATEPART ( day , ProrrDataFim) END) - DATEPART (day , ProrrDataInicio) + 1 < 0 THEN 
+                      DATEPART ( mm , ProrrDataFim ) - DATEPART ( mm , ProrrDataInicio) + ( DATEPART (year,ProrrDataFim) - DATEPART (year , ProrrDataInicio))*12-1
+           ELSE DATEPART ( mm , ProrrDataFim ) - DATEPART ( mm , ProrrDataInicio) + ( DATEPART (year,ProrrDataFim) - DATEPART (year , ProrrDataInicio))*12
+END)
+AS MesesProrr, 
+
+(CASE WHEN RepactDataInicio = RepactDataFim THEN 0
+           WHEN (CASE WHEN DATEPART ( day , RepactDataFim ) = 31 THEN 30
+                               WHEN DATEPART ( day , RepactDataFim ) = 29 THEN 30
+                               WHEN DATEPART ( day , RepactDataFim ) = 28 THEN 30
+                               ELSE DATEPART ( day , RepactDataFim ) END ) - DATEPART (day,RepactDataInicio) + 1 < 0 THEN
+                                         30 + (CASE WHEN DATEPART ( day , RepactDataFim ) = 31 THEN 30
+                                         WHEN DATEPART ( day , RepactDataFim ) = 29 THEN 30
+                                         WHEN DATEPART ( day , RepactDataFim ) = 28 THEN 30
+                                         ELSE DATEPART ( day , RepactDataFim ) END ) - DATEPART (day , RepactDataInicio)+1
+          ELSE (CASE WHEN DATEPART ( day , RepactDataFim ) = 31 THEN 30
+                     WHEN DATEPART ( day , RepactDataFim ) = 29 THEN 30
+                     WHEN DATEPART ( day , RepactDataFim ) = 28 THEN 30
+                     ELSE DATEPART ( day , RepactDataFim ) END ) - DATEPART (day , RepactDataInicio)+1
+END) 
+AS DiasRepact, 
+
+(CASE WHEN RepactDataInicio = 0 THEN 0
+          WHEN (CASE WHEN DATEPART ( day , RepactDataFim ) = 31 THEN 30
+                     WHEN DATEPART ( day , RepactDataFim ) = 29 THEN 30
+                     WHEN DATEPART ( day , RepactDataFim ) = 28 THEN 30
+                     ELSE DATEPART ( day , RepactDataFim ) END ) - DATEPART (day,RepactDataInicio)+1 < 0 THEN
+                                 DATEPART (mm,RepactDataFim) - DATEPART (mm,RepactDataInicio) + ( DATEPART (year,RepactDataFim) - DATEPART (year,RepactDataInicio))*12-1
+          ELSE DATEPART (mm,RepactDataFim) - DATEPART (mm,RepactDataInicio) + ( DATEPART (year,RepactDataFim) - DATEPART (year,RepactDataInicio))*12
+END)
+AS MesesRepact, 
+
+
+(CASE WHEN AditDataInicio = AditDataFim THEN 0
+           WHEN (CASE WHEN DATEPART ( day , AditDataFim ) = 31 THEN 30
+                               WHEN DATEPART ( day , AditDataFim ) = 29 THEN 30
+                               WHEN DATEPART ( day , AditDataFim ) = 28 THEN 30
+                               ELSE DATEPART ( day , AditDataFim ) END ) - DATEPART (day,AditDataInicio) + 1 < 0 THEN
+                                         30 + (CASE WHEN DATEPART ( day , AditDataFim ) = 31 THEN 30
+                                         WHEN DATEPART ( day , AditDataFim ) = 29 THEN 30
+                                         WHEN DATEPART ( day , AditDataFim ) = 28 THEN 30
+                                         ELSE DATEPART ( day , AditDataFim ) END ) - DATEPART (day , AditDataInicio)+1
+          ELSE (CASE WHEN DATEPART ( day , AditDataFim ) = 31 THEN 30
+                     WHEN DATEPART ( day , AditDataFim ) = 29 THEN 30
+                     WHEN DATEPART ( day , AditDataFim ) = 28 THEN 30
+                     ELSE DATEPART ( day , AditDataFim ) END ) - DATEPART (day , AditDataInicio)+1
+END) 
+AS DiasAdit, 
+
+(CASE WHEN AditDataInicio = 0 THEN 0
+          WHEN (CASE WHEN DATEPART ( day , AditDataFim ) = 31 THEN 30
+                     WHEN DATEPART ( day , AditDataFim ) = 29 THEN 30
+                     WHEN DATEPART ( day , AditDataFim ) = 28 THEN 30
+                     ELSE DATEPART ( day , AditDataFim ) END ) - DATEPART (day,AditDataInicio)+1 < 0 THEN
+                                 DATEPART (mm,AditDataFim) - DATEPART (mm,AditDataInicio) + ( DATEPART (year,AditDataFim) - DATEPART (year,AditDataInicio))*12-1
+          ELSE DATEPART (mm,AditDataFim) - DATEPART (mm,AditDataInicio) + ( DATEPART (year,AditDataFim) - DATEPART (year,AditDataInicio))*12
+END)
+AS MesesAdit
+
+FROM 
+((TBL_Contratos LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Repactuacoes.RepactDataInicio, TBL_Repactuacoes.RepactDataFim, TBL_Repactuacoes.CodRepactuacoes
+FROM TBL_Contratos LEFT JOIN TBL_Repactuacoes ON TBL_Contratos.CodContratos = TBL_Repactuacoes.CodContratos) AS QRY_DR 
+
+ON TBL_Contratos.CodContratos = QRY_DR.CodContratos) LEFT JOIN 
+
+(SELECT TBL_Contratos.CodContratos, TBL_Aditamentos.AditDataInicio, TBL_Aditamentos.AditDataFim, TBL_Aditamentos.CodAditamentos
+FROM TBL_Contratos INNER JOIN TBL_Aditamentos ON TBL_Contratos.CodContratos = TBL_Aditamentos.CodContratos) AS QRY_DA 
+
+ON TBL_Contratos.CodContratos = QRY_DA.CodContratos) INNER JOIN TBL_Prorrogacoes ON TBL_Contratos.CodContratos = TBL_Prorrogacoes.CodContratos
+) AS QRY_DC 
+RIGHT JOIN 
+(
+SELECT TBL_C.CodContratos, TBL_C.Situacao, TBL_C.Tipo, TBL_C.CodEGTTV, Sum(QRY_PPU.VlrTotal) AS SomaDeVlrTotal, QRY_PPU.CodRepactuacoes, QRY_PPU.NumeroRepactuacao, QRY_PPU.CodAditamentos
+FROM TBL_Contratos AS TBL_C LEFT JOIN (SELECT 
+TBL_Unidades.CodUnidades, 
+TBL_Unidades.CodigoSISFIN, 
+TBL_Unidades.NomeUnidade, 
+TBL_Contratos.Situacao, 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.NomeContrato,
+TBL_Contratos.UF, 
+TBL_Unidades.CodAditamentos, 
+TBL_Repactuacoes.NumeroRepact AS NumeroRepactuacao, 
+TBL_Precos.CodRepactuacoes, 
+TBL_Roteiros.[Municipio / Roteiro], 
+
+TBL_Unidades.SupRotineiro*TBL_Precos.Rotineiro+
+TBL_Unidades.RecRotineiro*TBL_Precos.Rotineiro+
+TBL_Unidades.SupEventual*TBL_Precos.Eventual+
+TBL_Unidades.RecEventual*TBL_Precos.Eventual+
+TBL_Unidades.SupEspecial*TBL_Precos.Especial+
+TBL_Unidades.RecEspecial*TBL_Precos.Especial+
+TBL_Unidades.Conjugado*TBL_Precos.Conjugado+
+TBL_Unidades.SupRotMult*TBL_Precos.RotineiroMultiplo+
+TBL_Unidades.SupEveMult*TBL_Precos.EventualMultiplo+
+TBL_Unidades.SupEspMult*TBL_Precos.EspecialMultiplo AS VlrTransp, 
+
+TBL_Unidades.TratCedulas*TBL_Precos.TratCedulas+
+TBL_Unidades.TratMoedas*TBL_Precos.TratMoedas+
+TBL_Unidades.AdValoremBB*TBL_Precos.AdValoremBB+
+TBL_Unidades.AdValoremOutros*TBL_Precos.AdValoremOutros+
+TBL_Unidades.Custodia*TBL_Precos.Custodia AS VlrBase, 
+
+TBL_Unidades.AcionEveSimples*TBL_Precos.AcionEveSimples+
+TBL_Unidades.AcionEspSimples*TBL_Precos.AcionEspSimples+
+TBL_Unidades.AcionComplementarSimples*TBL_Precos.AcionComplementarSimples+
+TBL_Unidades.AcionEveMultiplo*TBL_Precos.AcionEveMultiplo+
+TBL_Unidades.AcionEspMultiplo*TBL_Precos.AcionEspMultiplo+
+TBL_Unidades.AcionComplementarMultiplo*TBL_Precos.AcionComplementarMultiplo+
+TBL_Unidades.CarroDedicado*TBL_Precos.CarroDedicado+
+TBL_Unidades.MotoDedicada*TBL_Precos.MotoDedicada AS VlrAcionamento,
+
+TBL_Unidades.SupRotineiro*TBL_Precos.Rotineiro+
+TBL_Unidades.RecRotineiro*TBL_Precos.Rotineiro+
+TBL_Unidades.SupEventual*TBL_Precos.Eventual+
+TBL_Unidades.RecEventual*TBL_Precos.Eventual+
+TBL_Unidades.SupEspecial*TBL_Precos.Especial+
+TBL_Unidades.RecEspecial*TBL_Precos.Especial+
+TBL_Unidades.Conjugado*TBL_Precos.Conjugado+
+TBL_Unidades.SupRotMult*TBL_Precos.RotineiroMultiplo+
+TBL_Unidades.SupEveMult*TBL_Precos.EventualMultiplo+
+TBL_Unidades.SupEspMult*TBL_Precos.EspecialMultiplo+
+TBL_Unidades.TratCedulas*TBL_Precos.TratCedulas+
+TBL_Unidades.TratMoedas*TBL_Precos.TratMoedas+
+TBL_Unidades.AdValoremBB*TBL_Precos.AdValoremBB+
+TBL_Unidades.AdValoremOutros*TBL_Precos.AdValoremOutros+
+TBL_Unidades.Custodia*TBL_Precos.Custodia +
+TBL_Unidades.AcionEveSimples*TBL_Precos.AcionEveSimples+
+TBL_Unidades.AcionEspSimples*TBL_Precos.AcionEspSimples+
+TBL_Unidades.AcionComplementarSimples*TBL_Precos.AcionComplementarSimples+
+TBL_Unidades.AcionEveMultiplo*TBL_Precos.AcionEveMultiplo+
+TBL_Unidades.AcionEspMultiplo*TBL_Precos.AcionEspMultiplo+
+TBL_Unidades.AcionComplementarMultiplo*TBL_Precos.AcionComplementarMultiplo+
+TBL_Unidades.CarroDedicado*TBL_Precos.CarroDedicado+
+TBL_Unidades.MotoDedicada*TBL_Precos.MotoDedicada AS VlrTotal
+
+FROM (TBL_Contratos INNER JOIN ((TBL_Roteiros INNER JOIN TBL_Precos ON TBL_Roteiros.CodRoteiros = TBL_Precos.CodRoteiros) INNER JOIN TBL_Unidades ON TBL_Roteiros.CodRoteiros = TBL_Unidades.CodRoteiros) ON TBL_Contratos.CodContratos = TBL_Roteiros.CodContratos) INNER JOIN TBL_Repactuacoes ON (TBL_Repactuacoes.CodRepactuacoes = TBL_Precos.CodRepactuacoes) AND (TBL_Contratos.CodContratos = TBL_Repactuacoes.CodContratos)
+
+WHERE (((TBL_Contratos.Situacao)='Ativo')))  AS QRY_PPU ON TBL_C.CodContratos = QRY_PPU.CodContratos
+GROUP BY TBL_C.CodContratos, TBL_C.Situacao, TBL_C.Tipo, TBL_C.CodEGTTV, QRY_PPU.CodRepactuacoes, QRY_PPU.NumeroRepactuacao, QRY_PPU.CodAditamentos
+HAVING (((TBL_C.Situacao)='Ativo') AND ((QRY_PPU.CodAditamentos)<>0))
+) AS QRY_VTSPC 
+ON (QRY_DC.CodRepactuacoes = QRY_VTSPC.CodRepactuacoes) AND (QRY_DC.CodAditamentos = QRY_VTSPC.CodAditamentos) AND (QRY_DC.CodContratos = QRY_VTSPC.CodContratos)) LEFT JOIN TBL_Repactuacoes ON QRY_DC.CodRepactuacoes = TBL_Repactuacoes.CodRepactuacoes) LEFT JOIN TBL_Aditamentos ON QRY_DC.CodAditamentos = TBL_Aditamentos.CodAditamentos) AS QRY_VGG0
+) AS QRY_VGG1 ) AS QRY_VGG2 INNER JOIN TBL_Prorrogacoes ON (QRY_VGG2.CodContratos = TBL_Prorrogacoes.CodContratos AND QRY_VGG2.NumeroProrrogacao = TBL_Prorrogacoes.NumeroProrrogacao)
+
+
+ORDER BY
+QRY_VGG2.CodContratos, QRY_VGG2.NumeroProrrogacao, QRY_VGG2.NumeroRepact, QRY_VGG2.NumeroAditamento
+;
+
