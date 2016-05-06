@@ -1,0 +1,151 @@
+Option Compare Database
+
+Private Sub Form_Load()
+'Verifica o nível de acesso do usuário
+TpAcesso = VerificaAcesso()
+If TpAcesso = "OcultaTudo" Or TpAcesso = "CETES - Consulta" Or _
+        TpAcesso = "GEOCE" Or _
+        TpAcesso = "GILOG - Pagamentos" Then
+    DoCmd.Close
+    Exit Sub
+End If
+'Permite alterar e incluir registros
+'(deveria ser automático, mas por algum motivo aleatório não permite
+'em alguns casos)
+Me.AllowAdditions = True
+Me.AllowEdits = True
+Me.AllowDeletions = True
+Call Ajuda("Oculta")
+Call Botoes("Exibe")
+End Sub
+
+Private Sub cboTipo_Click()
+Dim txtSQL As String
+If IsNull(Me.cboTipo.Value) And IsNull(Me.cboUF.Value) Then
+    Me.lstContratos.RowSource = "SELECT TBL_Contratos.CodContratos, TBL_Contratos.UF, TBL_Contratos.Tipo, TBL_Contratos.NomeContrato FROM TBL_Contratos ORDER BY TBL_Contratos.UF, TBL_Contratos.Tipo, TBL_Contratos.NomeContrato;"
+Else
+    'Ativa filtro do cabeçalho para Tipo
+    txtSQL = "SELECT TBL_Contratos.CodContratos, TBL_Contratos.UF, TBL_Contratos.Tipo, TBL_Contratos.NomeContrato FROM TBL_Contratos WHERE ("
+    'e, se necessário, para UF
+    If [Forms]![FRM_Alteracao_2_0Contratos]![cboUF] <> Clear Then txtSQL = txtSQL & "((TBL_Contratos.UF)=[Formulários]![FRM_Alteracao_2_0Contratos]![cboUF]) AND "
+    
+    txtSQL = txtSQL & "((TBL_Contratos.Tipo)=[Formulários]![FRM_Alteracao_2_0Contratos]![cboTipo])) ORDER BY TBL_Contratos.UF, TBL_Contratos.Tipo, TBL_Contratos.NomeContrato;"
+    Me.lstContratos.RowSource = txtSQL
+End If
+Me.lstContratos.Requery
+Me.ContratoAnterior.Requery
+End Sub
+
+Private Sub cboUF_Click()
+Dim txtSQL As String
+If IsNull(Me.cboTipo.Value) And IsNull(Me.cboUF.Value) Then
+    Me.lstContratos.RowSource = "SELECT TBL_Contratos.CodContratos, TBL_Contratos.UF, TBL_Contratos.Tipo, TBL_Contratos.NomeContrato FROM TBL_Contratos ORDER BY TBL_Contratos.UF, TBL_Contratos.Tipo, TBL_Contratos.NomeContrato;"
+Else
+    'Ativa filtro do cabeçalho para UF
+    txtSQL = "SELECT TBL_Contratos.CodContratos, TBL_Contratos.UF, TBL_Contratos.Tipo, TBL_Contratos.NomeContrato FROM TBL_Contratos WHERE ("
+    'e, se necessário, para Tipo
+    If [Forms]![FRM_Alteracao_2_0Contratos]![cboTipo] <> Clear Then txtSQL = txtSQL & "((TBL_Contratos.Tipo)=[Formulários]![FRM_Alteracao_2_0Contratos]![cboTipo]) AND "
+    
+    txtSQL = txtSQL & "((TBL_Contratos.UF)=[Formulários]![FRM_Alteracao_2_0Contratos]![cboUF])) ORDER BY TBL_Contratos.UF, TBL_Contratos.Tipo, TBL_Contratos.NomeContrato;"
+    Me.lstContratos.RowSource = txtSQL
+End If
+Me.lstContratos.Requery
+Me.ContratoAnterior.Requery
+End Sub
+
+Private Sub lstContratos_Click()
+'Ao selecionar um Contrato, encontra o registro dele
+
+Dim db As DAO.Database
+Dim rst As DAO.Recordset
+Dim txtSQL As String
+Set db = CurrentDb
+
+txtSQL = "SELECT TBL_Contratos.* FROM TBL_Contratos ORDER BY TBL_Contratos.UF, TBL_Contratos.Tipo, TBL_Contratos.NomeContrato; "
+Set rst = db.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+rst.MoveFirst
+LinhaForm = 1
+
+Do While Not rst.EOF
+    If CStr(rst.Fields("CodContratos").Value) = CStr(Me.lstContratos) Then Exit Do
+    LinhaForm = LinhaForm + 1
+    rst.MoveNext
+Loop
+
+rst.Close
+db.Close
+
+DoCmd.GoToRecord acDataForm, "FRM_Alteracao_2_0Contratos", acGoTo, LinhaForm
+Me.ContratoAnterior.Requery
+End Sub
+Private Sub QuestionMark_Click()
+If Me.LinhaHelp1.Visible = False Then
+    Call Ajuda("Exibe")
+Else
+    Call Ajuda("Oculta")
+End If
+End Sub
+Private Sub Ajuda(OQueFazer As String)
+Dim VF As Boolean
+If OQueFazer = "Exibe" Then VF = True
+If OQueFazer = "Oculta" Then VF = False
+
+'Linhas e quadros de ajuda que vão aparecer ou ocultar
+Me.LinhaHelp1.Visible = VF
+Me.LinhaHelp2.Visible = VF
+Me.LinhaHelp3.Visible = VF
+Me.LinhaHelp4.Visible = VF
+Me.LinhaHelp5.Visible = VF
+Me.LinhaHelp6.Visible = VF
+Me.LinhaHelp7.Visible = VF
+Me.LinhaHelp8.Visible = VF
+Me.LinhaHelp9.Visible = VF
+Me.LinhaHelp10.Visible = VF
+Me.LinhaHelp11.Visible = VF
+Me.LinhaHelp12.Visible = VF
+Me.LinhaHelp13.Visible = VF
+Me.LinhaHelp14.Visible = VF
+Me.LinhaHelp15.Visible = VF
+Me.LinhaHelp16.Visible = VF
+Me.LinhaHelp17.Visible = VF
+Me.Help1.Visible = VF
+Me.Help2.Visible = VF
+Me.Help3.Visible = VF
+Me.Help4.Visible = VF
+Me.Help5.Visible = VF
+Me.Help6.Visible = VF
+Me.Help8.Visible = VF
+Me.Help9.Visible = VF
+Me.Help10.Visible = VF
+End Sub
+
+Private Sub Botoes(OQueFazer As String)
+Dim VF As Boolean
+If OQueFazer = "Exibe" Then VF = True
+If OQueFazer = "Oculta" Then VF = False
+
+'Linhas e quadros de ajuda que vão aparecer ou ocultar
+Me.Comando6.Visible = VF
+Me.BOTAO_Excluir_Registro_FRM_Unidades.Visible = VF
+Me.Comando7.Visible = VF
+Me.BOTAO_Salvar_Registro_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_Para_Primeira_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_para_registro_anterior_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_para_proximo_registro_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_para_ultimo_registro_FRM_Unidades.Visible = VF
+End Sub
+
+Private Sub DiaRecebimento_Click()
+If IsNull(Me.DiaRecebimento.Value) Then Exit Sub
+If Me.DiaRecebimento.Value = "Dia 25" Then
+    Me.DiaPagamento.Value = "5º dia útil"
+    Me.Periodo.Value = "21 a 20"
+Else
+    Me.DiaPagamento.Value = "12º dia útil"
+    Me.Periodo.Value = "01 a 31"
+End If
+
+End Sub
+
+
