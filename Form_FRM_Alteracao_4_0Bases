@@ -1,0 +1,129 @@
+Option Compare Database
+
+Private Sub Form_Load()
+'Verifica o nível de acesso do usuário
+TpAcesso = VerificaAcesso()
+If TpAcesso = "OcultaTudo" Or TpAcesso = "CETES - Consulta" Or _
+        TpAcesso = "GEOCE" Or _
+        TpAcesso = "GILOG - Pagamentos" Then
+    DoCmd.Close
+    Exit Sub
+End If
+'Permite alterar e incluir registros
+'(deveria ser automático, mas por algum motivo aleatório não permite
+'em alguns casos)
+Me.AllowAdditions = True
+Me.AllowEdits = True
+Me.AllowDeletions = True
+
+Call Ajuda("Oculta") 'oculta os campos de Ajuda
+Call Botoes("Exibe") 'exibe os botões de navegação
+End Sub
+
+Private Sub cboTipo_Click() 'Filtro do header
+'Altera o RowSource da lista de bases
+Dim txtSQL As String
+'Filtra por Tipo
+txtSQL = "SELECT TBL_Bases.CodBases, TBL_Bases.NomeBase, TBL_EGTTV.NomeEGTTV, TBL_Bases.UF, TBL_Bases.Tipo, IIf([TrataNumerario]=1,'Sim','Não') AS [Trata Numerario] FROM TBL_Bases INNER JOIN TBL_EGTTV ON TBL_Bases.CodEGTTV= TBL_EGTTV.CodEGTTV WHERE ("
+'Se necessário, filtra por UF
+If [Forms]![FRM_Alteracao_4_0Bases]![cboUF] <> Clear Then txtSQL = txtSQL & "((TBL_Bases.UF)=[Formulários]![FRM_Alteracao_4_0Bases]![cboUF]) AND " 'se UF <> clear, filtra também por UF
+
+txtSQL = txtSQL & "((TBL_Bases.Tipo)=[Formulários]![FRM_Alteracao_4_0Bases]![cboTipo])) ORDER BY TBL_Bases.UF, TBL_Bases.Tipo, TBL_Bases.NomeBase;"
+Me.lstBases.RowSource = txtSQL
+Me.lstBases.Requery
+End Sub
+
+Private Sub cboUF_Click() 'Filtro do header
+'Altera o RowSource da lista de bases
+Dim txtSQL As String
+'Filtra por UF
+txtSQL = "SELECT TBL_Bases.CodBases, TBL_Bases.NomeBase, TBL_EGTTV.NomeEGTTV, TBL_Bases.UF, TBL_Bases.Tipo, IIf([TrataNumerario]=1,'Sim','Não') AS [Trata Numerario] FROM TBL_Bases INNER JOIN TBL_EGTTV ON TBL_Bases.CodEGTTV= TBL_EGTTV.CodEGTTV WHERE ("
+'Se necessário, filtra por Tipo
+If [Forms]![FRM_Alteracao_4_0Bases]![cboTipo] <> Clear Then txtSQL = txtSQL & "((TBL_Bases.Tipo)=[Formulários]![FRM_Alteracao_4_0Bases]![cboTipo]) AND " 'se Tipo <> clear, filtra também por Tipo
+
+txtSQL = txtSQL & "((TBL_Bases.UF)=[Formulários]![FRM_Alteracao_4_0Bases]![cboUF])) ORDER BY TBL_Bases.UF, TBL_Bases.Tipo, TBL_Bases.NomeBase;"
+Me.lstBases.RowSource = txtSQL
+Me.lstBases.Requery
+End Sub
+
+Private Sub lstBases_Click() 'Clicando na lista de bases, o filtro passa para todo o formulário
+'Ao selecionar uma Base, encontra o registro dela
+
+Dim db As DAO.Database
+Dim rst As DAO.Recordset
+Dim txtSQL As String
+Set db = CurrentDb
+
+txtSQL = "SELECT TBL_Bases.* FROM TBL_Bases ORDER BY UF, Tipo, NomeBase; "
+Set rst = db.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+rst.MoveFirst
+LinhaForm = 1
+
+Do While Not rst.EOF
+    If CStr(rst.Fields("CodBases").Value) = CStr(Me.lstBases) Then Exit Do
+    LinhaForm = LinhaForm + 1
+    rst.MoveNext
+Loop
+
+rst.Close
+db.Close
+
+DoCmd.GoToRecord acDataForm, "FRM_Alteracao_4_0Bases", acGoTo, LinhaForm
+End Sub
+Private Sub QuestionMark_Click() 'Se oculto, exibe os campos de Ajuda e vice-versa
+If Me.LinhaHelp1.Visible = False Then
+    Call Ajuda("Exibe")
+Else
+    Call Ajuda("Oculta")
+End If
+End Sub
+Private Sub Ajuda(OQueFazer As String)
+Dim VF As Boolean
+If OQueFazer = "Exibe" Then VF = True
+If OQueFazer = "Oculta" Then VF = False
+
+'Linhas e quadros de ajuda que vão aparecer ou ocultar
+Me.LinhaHelp1.Visible = VF
+Me.LinhaHelp2.Visible = VF
+Me.LinhaHelp3.Visible = VF
+Me.LinhaHelp4.Visible = VF
+Me.LinhaHelp5.Visible = VF
+Me.LinhaHelp6.Visible = VF
+Me.LinhaHelp7.Visible = VF
+Me.LinhaHelp8.Visible = VF
+Me.LinhaHelp9.Visible = VF
+Me.LinhaHelp10.Visible = VF
+Me.LinhaHelp16.Visible = VF
+Me.Help1.Visible = VF
+Me.Help2.Visible = VF
+Me.Help3.Visible = VF
+Me.Help4.Visible = VF
+Me.Help5.Visible = VF
+Me.Help6.Visible = VF
+Me.Help7.Visible = VF
+Me.Help8.Visible = VF
+Me.Help10.Visible = VF
+Me.Help11.Visible = VF
+End Sub
+
+Private Sub Botoes(OQueFazer As String)
+Dim VF As Boolean
+If OQueFazer = "Exibe" Then VF = True
+If OQueFazer = "Oculta" Then VF = False
+
+'Botões que vão aparecer ou ocultar
+Me.Comando6.Visible = VF
+Me.BOTAO_Excluir_Registro_FRM_Unidades.Visible = VF
+Me.Comando7.Visible = VF
+Me.BOTAO_Salvar_Registro_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_Para_Primeira_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_para_registro_anterior_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_para_proximo_registro_FRM_Unidades.Visible = VF
+Me.BOTAO_Ir_para_ultimo_registro_FRM_Unidades.Visible = VF
+End Sub
+
+
+
+
+
