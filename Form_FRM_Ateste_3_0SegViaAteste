@@ -1,0 +1,567 @@
+Option Compare Database
+
+Private Sub Form_Load()
+'Verifica o nível de acesso do usuário
+TpAcesso = VerificaAcesso()
+If TpAcesso = "OcultaTudo" Or TpAcesso = "GILOG - Pagamentos" Or TpAcesso = "GEOCE" Then
+    DoCmd.Close
+    Exit Sub
+End If
+'Deleta as infos da TBL Temporária NF (utilizada para a lst_NF neste FRM)
+Dim txtSQL As String
+'txtSQL = "DELETE TBL_NF_Temp.* FROM TBL_NF_Temp;"
+'CurrentDb.Execute txtSQL
+Me.AllowAdditions = True
+Me.AllowEdits = True
+End Sub
+
+Private Sub cbo_Contrato_Click()
+Me.lstAtestes.RowSource = "SELECT TBL_Atestes.NumAteste, TBL_Atestes.AnoAteste, format(TBL_Atestes.DataRecebimento,'dd/mm/yyyy') AS DataRecebimento, TBL_Atestes.Competencia, Sum(TBL_NF.ValorNF) AS SomaDeValorNF, format(TBL_Atestes.DataPagamento,'dd/mm/yyyy') AS DataPagamento, TBL_Atestes.CodContratos, IIf([Substituido]=1,'Sim',IIf([Substituido]=0,'Não','')) AS Subst " & _
+    "FROM (TBL_NF INNER JOIN TBL_Atestes ON (TBL_NF.NumAteste = TBL_Atestes.NumAteste) AND (TBL_NF.AnoAteste = TBL_Atestes.AnoAteste))  " & _
+    "GROUP BY TBL_Atestes.CodContratos, TBL_Atestes.NumAteste, TBL_Atestes.AnoAteste, TBL_Atestes.DataRecebimento, TBL_Atestes.Competencia, TBL_Atestes.DataPagamento, TBL_Atestes.anoAteste, TBL_Atestes.numateste,IIf([Substituido]=1,'Sim',IIf([Substituido]=0,'Não','')) " & _
+    "HAVING (((TBL_Atestes.CodContratos)=[Formulários]![FRM_Ateste_3_0SegViaAteste]![cbo_Contrato])) and TBL_Atestes.AnoAteste = " & Year(Now()) & " " & _
+    "ORDER BY TBL_Atestes.anoAteste DESC , TBL_Atestes.numateste DESC;"
+Me.lstAtestes.Requery
+
+Dim rst As DAO.Recordset
+Dim db As DAO.Database
+Set db = CurrentDb
+Set rst = db.OpenRecordset("SELECT TBL_Contratos.*, TBL_EGTTV.NomeEGTTV AS NomEGTTV, DataFimContrato FROM " & _
+    "(TBL_Contratos INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV) " & _
+    "INNER JOIN QRY__TerminoDoContrato ON TBL_Contratos.CodContratos = QRY__TerminoDoContrato.CodContratos " & _
+    "WHERE TBL_Contratos.CodContratos = " & Me.cbo_Contrato.Value & ";", dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+Me.Fornecedor.Value = rst.Fields("NomEGTTV").Value
+Me.NumeroProcesso.Value = rst.Fields("Processo").Value
+Me.CNPJ.Value = rst.Fields("CNPJ").Value
+Me.NumCompromisso = Clear
+Me.NumBanco.Value = rst.Fields("PgtoBanco").Value
+Me.NumAgencia.Value = rst.Fields("PgtoAgencia").Value
+Me.NumOperacao.Value = rst.Fields("PgtoOperacao").Value
+Me.NumContaCorrente.Value = rst.Fields("PgtoContaCorrente").Value
+Me.DescricaoObj.Value = rst.Fields("Objeto").Value
+Me.VencimentoDoContrato.Value = rst.Fields("DataFimContrato").Value
+End Sub
+
+Private Sub cbo_UF_Click()
+Dim txtSQL As String
+Me.cbo_UF.Requery
+Me.cbo_Tipo = Clear
+Me.cbo_Tipo.Requery
+Me.cbo_Contrato = Clear
+Me.cbo_Contrato.Requery
+Me.lstAtestes.RowSource = "SELECT TBL_Atestes.NumAteste, TBL_Atestes.AnoAteste, format(TBL_Atestes.DataRecebimento,'dd/mm/yyyy') AS DataRecebimento, TBL_Atestes.Competencia, Sum(TBL_NF.ValorNF) AS SomaDeValorNF, format(TBL_Atestes.DataPagamento,'dd/mm/yyyy') AS DataPagamento, TBL_Atestes.CodContratos, IIf([Substituido]=1,'Sim',IIf([Substituido]=0,'Não','')) AS Subst  " & _
+    "FROM (TBL_NF INNER JOIN TBL_Atestes ON (TBL_NF.NumAteste = TBL_Atestes.NumAteste) AND (TBL_NF.AnoAteste = TBL_Atestes.AnoAteste)) INNER JOIN TBL_Contratos ON TBL_Atestes.CodContratos = TBL_Contratos.CodContratos " & _
+    "GROUP BY TBL_Atestes.CodContratos, TBL_Atestes.NumAteste, TBL_Atestes.AnoAteste, TBL_Atestes.DataRecebimento, TBL_Atestes.Competencia, TBL_Atestes.DataPagamento, TBL_Atestes.anoAteste, TBL_Atestes.numateste, TBL_Contratos.UF, IIf([Substituido]=1,'Sim',IIf([Substituido]=0,'Não','')) " & _
+    "HAVING TBL_Atestes.AnoAteste = " & Year(Now()) & " AND TBL_Contratos.UF = '" & Me.cbo_UF & "' " & _
+    "ORDER BY TBL_Atestes.anoAteste DESC , TBL_Atestes.numateste DESC;"
+Me.Fornecedor.Value = Clear
+Me.NumeroProcesso.Value = Clear
+Me.NumCompromisso = Clear
+Me.CNPJ.Value = Clear
+Me.NumBanco.Value = Clear
+Me.NumAgencia.Value = Clear
+Me.NumOperacao.Value = Clear
+Me.NumContaCorrente.Value = Clear
+Me.DescricaoObj.Value = Clear
+Me.VencimentoDoContrato.Value = Clear
+End Sub
+
+Private Sub cbo_Tipo_Click()
+Dim txtSQL As String
+'Limpa e atualiza os outros campos
+Me.cbo_Tipo.Requery
+Me.cbo_Contrato.RowSource = "SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, format(siges, '000000/0000') as [N Contrato], format(Compromisso, '000000/0000-AA') as Compr FROM TBL_Contratos WHERE (((TBL_Contratos.Tipo)=[Formulários]![FRM_Ateste_3_0SegViaAteste]![cbo_Tipo]) AND ((TBL_Contratos.UF)=[Formulários]![FRM_Ateste_3_0SegViaAteste]![cbo_UF]) AND ((TBL_Contratos.Situacao)='Ativo'));"
+Me.cbo_Contrato = ""
+Me.cbo_Contrato.Requery
+txtSQL = "SELECT TBL_Atestes.NumAteste, TBL_Atestes.AnoAteste, format(TBL_Atestes.DataRecebimento,'dd/mm/yyyy') AS DataRecebimento, TBL_Atestes.Competencia, Sum(TBL_NF.ValorNF) AS SomaDeValorNF, format(TBL_Atestes.DataPagamento,'dd/mm/yyyy') AS DataPagamento, TBL_Atestes.CodContratos, IIf([Substituido]=1,'Sim',IIf([Substituido]=0,'Não','')) AS Subst " & _
+    "FROM (TBL_NF INNER JOIN TBL_Atestes ON (TBL_NF.NumAteste = TBL_Atestes.NumAteste) AND (TBL_NF.AnoAteste = TBL_Atestes.AnoAteste)) INNER JOIN TBL_Contratos ON TBL_Atestes.CodContratos = TBL_Contratos.CodContratos "
+If Me.cbo_UF = Clear Then
+    txtSQL = txtSQL & "GROUP BY TBL_Atestes.CodContratos, TBL_Atestes.NumAteste, TBL_Atestes.AnoAteste, TBL_Atestes.DataRecebimento, TBL_Atestes.Competencia, TBL_Atestes.DataPagamento, TBL_Atestes.anoAteste, TBL_Atestes.numateste, TBL_Contratos.Tipo. IIf([Substituido]=1,'Sim',IIf([Substituido]=0,'Não','')) " & _
+        "HAVING TBL_Atestes.AnoAteste = " & Year(Now()) & " AND TBL_Contratos.Tipo = '" & Me.cbo_Tipo & "' "
+Else
+    txtSQL = txtSQL & "GROUP BY TBL_Atestes.CodContratos, TBL_Atestes.NumAteste, TBL_Atestes.AnoAteste, TBL_Atestes.DataRecebimento, TBL_Atestes.Competencia, TBL_Atestes.DataPagamento, TBL_Atestes.anoAteste, TBL_Atestes.numateste, TBL_Contratos.Tipo, TBL_Contratos.UF, IIf([Substituido]=1,'Sim',IIf([Substituido]=0,'Não','')) " & _
+        "HAVING TBL_Atestes.AnoAteste = " & Year(Now()) & " AND TBL_Contratos.Tipo = '" & Me.cbo_Tipo & "' AND TBL_Contratos.UF = '" & Me.cbo_UF & "' "
+End If
+txtSQL = txtSQL & "ORDER BY TBL_Atestes.anoAteste DESC , TBL_Atestes.numateste DESC;"
+Me.lstAtestes.RowSource = txtSQL
+Me.Fornecedor.Value = Clear
+Me.NumeroProcesso.Value = Clear
+Me.NumCompromisso = Clear
+Me.CNPJ.Value = Clear
+Me.NumBanco.Value = Clear
+Me.NumAgencia.Value = Clear
+Me.NumOperacao.Value = Clear
+Me.NumContaCorrente.Value = Clear
+Me.DescricaoObj.Value = Clear
+Me.VencimentoDoContrato.Value = Clear
+End Sub
+
+Private Sub cmd_GerarAteste_Click()
+'gera segunda via do ateste
+
+'On Error GoTo SairComErro
+
+'Pega as infos do Ateste para confirmar a impressão com o usuário
+If IsNull(Me.lstAtestes) = True Then Me.lstAtestes = Me.lstAtestes.ItemData(1)
+NumeroAteste = Me.lstAtestes.Column(0)
+AnoAteste = Me.lstAtestes.Column(1)
+
+If IsNull(Me.lstAtestes) Then
+    MsgBox ("Favor selecionar um Ateste.")
+    Exit Sub
+End If
+
+Continuar = MsgBox("Deseja imprimir 2ª via do Ateste Nº " & NumeroAteste & " / " & AnoAteste & "?", 4, "Atenção")
+If Continuar = 7 Then Exit Sub
+
+'Pega as infos do FORM
+CodContratos = Me.cbo_Contrato.Value
+NomeEGTTV = Me.Fornecedor.Value
+NumCNPJ = CStr(Left(Me.CNPJ.Value, 2) & "." & Mid(Me.CNPJ.Value, 3, 3) & "." & Mid(Me.CNPJ.Value, 6, 3) & "/" & Mid(Me.CNPJ.Value, 9, 4) & "-" & _
+    Right(Me.CNPJ.Value, 2))
+Processo = CStr(Left(Me.NumeroProcesso.Value, 4) & "." & Mid(Me.NumeroProcesso.Value, 5, 2) & "." & Mid(Me.NumeroProcesso.Value, 7, 4) & _
+    "." & Mid(Me.NumeroProcesso.Value, 11, 2) & "/" & Right(Me.NumeroProcesso.Value, 4))
+NumBanco = Me.NumBanco.Value
+NumAgencia = Me.NumAgencia.Value
+NumOperacao = Me.NumOperacao.Value
+NumContaCorrente = Me.NumContaCorrente.Value
+DataPgto = Format(Me.DataPrevPgto.Value, "dd/mm/yyyy")
+DescricaoObj = Me.DescricaoObj.Value
+RecebimentoNF = Format(Me.RecebimentoNF.Value, "dd/mm/yyyy")
+CompetenciaServico = Me.CompetenciaServico.Value
+NumCompromisso = Me.NumCompromisso.Value
+ValorMulta = Me.ValorMulta.Value
+ValorGlosa = Me.ValorGlosa.Value
+ValorRetencao = Me.ValorRetencao.Value
+TipoRetencao = Me.TipoRetencao.Value
+EventoRetencao = Me.EventoRetencao.Value
+MotivoMultaRetencao = Me.MotivoMultaRetencao.Value
+Observacao = Me.Observacao.Value
+ValorTotal = Me.ValorPgto.Value
+AnoCompet = Me.AnoCompetencia.Value
+MesCompet = Me.MesCompetencia.Value
+DiaRegistro = Me.DiaEnvio.Value
+MesRegistro = Me.MesEnvio.Value
+AnoRegistro = Me.AnoEnvio.Value
+
+Matricula = Environ("USERNAME") 'Identifica o usuário que está mexendo no Access
+
+'Preenche o Excel com as informações do Ateste para preparar para impressão
+    'Variáveis que referem ao Excel e Objects
+    Dim CaminhoExcel As String
+    Dim Xl As Excel.Application
+    Dim XlBook As Excel.Workbook
+    Dim XlSheet As Excel.Worksheet
+     
+    'Nome do caminho para o arquivo
+    CaminhoExcel = "\\sp0000sr028\Public\7854\cetes\EQUIPE CONTRATOS\GESTÃO DE PAGAMENTOS\Arquivos Access\MO19088.xlsm"
+    
+    'Abre o Excel
+    Set Xl = CreateObject("Excel.Application")
+    Set XlBook = GetObject(CaminhoExcel)
+     
+    'Deixa o Excel visível
+    Xl.Visible = False
+    'XlBook.Windows(2).Visible = True
+     
+    'Define a guia que será atualizada
+    Set XlSheet = XlBook.Worksheets("Ateste")
+     
+    'Começa o preenchimento do Ateste!
+    XlSheet.Range("J9") = NumeroAteste                          'NumeroAteste
+    XlSheet.Range("L9") = AnoAteste                             'AnoAteste
+    XlSheet.Range("A27") = NomeEGTTV                            'NomeEGTTV - CodContratos
+    XlSheet.Range("A30") = NumCNPJ                              'CNPJ - CodContratos
+    XlSheet.Range("A36") = DescricaoObj                         'Objeto - CodContratos
+    XlSheet.Range("D52") = Processo                             'NumeroProcesso - CodContratos
+    XlSheet.Range("S33") = CStr(Format(DataPgto, "dd/mm/yyyy")) 'DataPagamento
+    XlSheet.Range("K94") = DiaRegistro                         'DataRegistro
+    XlSheet.Range("N94") = MesRegistro                         'DataRegistro
+    XlSheet.Range("V94") = AnoRegistro                         'DataRegistro
+    XlSheet.Range("C16") = Format(RecebimentoNF, "dd/mm/yyyy")  'DataRecebimento
+    XlSheet.Range("J33") = CompetenciaServico                   'Competencia
+    XlSheet.Range("A39") = CStr(Left(NumCompromisso, 6))        'Compromisso
+    XlSheet.Range("D39") = Mid(NumCompromisso, 7, 4)            'Compromisso
+    XlSheet.Range("G39") = Right(NumCompromisso, 2)             'Compromisso
+    XlSheet.Range("A42") = ValorMulta                           'ValorMulta
+    XlSheet.Range("N42") = ValorGlosa                           'ValorGlosa
+    XlSheet.Range("A45") = ValorRetencao                        'ValorRetencao
+    XlSheet.Range("E45") = TipoRetencao                         'TipoRetencao
+    XlSheet.Range("I45") = EventoRetencao                       'EventoRetencao
+    XlSheet.Range("A48") = MotivoMultaRetencao                  'MotivoMultaRetencao
+    XlSheet.Range("A92") = Observacao                          'Observacao
+    XlSheet.Range("B33") = ValorTotal                           'ValorPagamento
+    
+    If Me.cbo_TipoPgto.Value = "Crédito em Conta" Then
+        XlSheet.Range("A62") = "X"                              'Crédito em Conta corrente bancária
+        XlSheet.Range("J62") = NumBanco                         'NumBanco - CodContratos
+        XlSheet.Range("N62") = NumAgencia                       'NumAgencia - CodContratos
+        XlSheet.Range("S62") = NumOperacao                      'NumOperacao - CodContratos
+        XlSheet.Range("X62") = NumContaCorrente                 'NumConta - CodContratos
+    Else
+        XlSheet.Range("A60") = "X"                              'Boleto Bancário
+    End If
+    
+'preenche os campos de NF
+    Set rst = CurrentDb.OpenRecordset("SELECT * FROM TBL_NF WHERE TBL_NF.NumAteste = " & NumeroAteste & " AND TBL_NF.AnoAteste = " & AnoAteste & " ORDER BY TBL_NF.CNPJdaNF, TBL_NF.NumeroNF;", dbOpenDynaset, dbFailOnError + dbSeeChanges)
+    rst.MoveFirst
+    Linha = 70
+    
+    Do While Not rst.EOF
+        
+        XlSheet.Range("A" & Linha) = rst!CNPJdaNF
+        XlSheet.Range("D" & Linha) = rst!TipoNF
+        XlSheet.Range("F" & Linha) = rst!NumeroNF
+        XlSheet.Range("H" & Linha) = rst!SerieNF
+        XlSheet.Range("J" & Linha) = Format(rst!DataEmissaoNF, "dd/mm/yyyy")
+        XlSheet.Range("L" & Linha) = rst!ValorNF
+        XlSheet.Range("O" & Linha) = rst!MunicipioServicoNF
+        XlSheet.Range("R" & Linha) = rst!ValorIsentoISSQN
+        XlSheet.Range("U" & Linha) = rst!AliquotaNF
+        XlSheet.Range("X" & Linha) = rst!Destino
+        Linha = Linha + 1
+        If Linha = 90 Then 'Mais linhas que o normal, deve ser enviado para a guia Ateste_40
+            Set XlSheet = XlBook.Worksheets("Ateste_40")
+        End If
+        
+        rst.MoveNext
+    Loop
+    
+SairNormal:
+
+    'Imprime e Fecha o Excel
+    XlSheet.PrintOut
+        If Linha < 90 Then 'Imprime a via de Protocolo do Ateste
+        Set XlSheet = XlBook.Worksheets("Protocolo_Ateste")
+    Else
+        Set XlSheet = XlBook.Worksheets("Protocolo_Ateste_40")
+    End If
+    XlSheet.PrintOut
+    XlBook.Close SaveChanges:=False
+    Set Xl = Nothing
+    Set XlBook = Nothing
+    Set XlSheet = Nothing
+
+
+' apaga as infos temporárias de NF e fecha o FORM
+Dim txtSQL As String
+txtSQL = "DELETE TBL_NF_Temp.* FROM TBL_NF_Temp;"
+CurrentDb.Execute txtSQL
+DoCmd.Close
+
+Exit Sub
+
+SairComNull:
+MsgBox ("Erro: Ateste não gerado." & Chr(13) & "Favor preencher todos os campos.")
+Exit Sub
+
+SairComErro:
+MsgBox ("Erro.")
+Exit Sub
+
+End Sub
+
+Private Sub cmdSair_Click()
+DoCmd.Close
+End Sub
+
+Private Sub cmdAtualizar_Click()
+Me.Refresh
+End Sub
+
+Private Sub lstAtestes_Click()
+Dim NumeroAteste As Integer
+Dim AnoAteste As Integer
+Dim CodigoContratos As Integer
+
+NumeroAteste = Me.lstAtestes.Column(0)
+AnoAteste = Me.lstAtestes.Column(1)
+CodigoContratos = Me.lstAtestes.Column(6)
+
+Call preenche_campos(CodigoContratos, NumeroAteste, AnoAteste)
+
+End Sub
+Private Sub preenche_campos(CodContratos As Integer, NumeroAteste As Integer, AnoAteste As Integer)
+Dim txtSQL As String
+Dim rst As Recordset
+
+txtSQL = "SELECT TBL_Contratos.* FROM TBL_Contratos ;"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+Do While Not rst.EOF
+    If rst!CodContratos = CodContratos Then
+        Me.cbo_UF.Value = rst!UF
+        Me.cbo_Tipo.Value = rst!Tipo
+        Me.cbo_Contrato.RowSource = "SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, format(siges, '000000/0000') as [N SIGES], format(Compromisso, '000000/0000-AA') as Compr FROM TBL_Contratos WHERE (((TBL_Contratos.Tipo)=[Formulários]![FRM_Ateste_3_0SegViaAteste]![cbo_Tipo]) AND ((TBL_Contratos.UF)=[Formulários]![FRM_Ateste_3_0SegViaAteste]![cbo_UF]) AND ((TBL_Contratos.Situacao)='Ativo'));"
+        Me.cbo_Contrato.Value = CodContratos
+        Exit Do
+    End If
+    rst.MoveNext
+Loop
+
+txtSQL = "SELECT TBL_Contratos.*, TBL_EGTTV.NomeEGTTV AS NomEGTTV, DataFimContrato FROM " & _
+    "(TBL_Contratos INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV) " & _
+    "INNER JOIN QRY__TerminoDoContrato ON TBL_Contratos.CodContratos = QRY__TerminoDoContrato.CodContratos " & _
+    "WHERE TBL_Contratos.CodContratos = " & Me.cbo_Contrato.Value & ";"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+Me.Fornecedor.Value = rst.Fields("NomEGTTV").Value
+Me.NumeroProcesso.Value = rst.Fields("Processo").Value
+Me.CNPJ.Value = rst.Fields("CNPJ").Value
+Me.NumCompromisso = Clear
+Me.NumBanco.Value = rst.Fields("PgtoBanco").Value
+Me.NumAgencia.Value = rst.Fields("PgtoAgencia").Value
+Me.NumOperacao.Value = rst.Fields("PgtoOperacao").Value
+Me.NumContaCorrente.Value = rst.Fields("PgtoContaCorrente").Value
+Me.DescricaoObj.Value = rst.Fields("Objeto").Value
+Me.VencimentoDoContrato.Value = rst.Fields("DataFimContrato").Value
+
+txtSQL = "SELECT TBL_Atestes.CodContratos, TBL_Atestes.NumAteste, TBL_Atestes.AnoAteste, Sum(TBL_NF.ValorNF) AS SomaDeValorNF " & _
+    "FROM TBL_NF INNER JOIN TBL_Atestes ON (TBL_NF.AnoAteste = TBL_Atestes.AnoAteste) AND (TBL_NF.NumAteste = TBL_Atestes.NumAteste) " & _
+    "GROUP BY TBL_Atestes.CodContratos, TBL_Atestes.NumAteste, TBL_Atestes.AnoAteste " & _
+    "HAVING (((TBL_Atestes.CodContratos)=" & CodContratos & ") " & _
+    "AND ((TBL_Atestes.NumAteste)=" & NumeroAteste & ") " & _
+    "AND ((TBL_Atestes.AnoAteste)=" & AnoAteste & "));"
+
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+
+'Preenche o campo ValorPgto
+Me.ValorPgto.Value = rst!SomaDeValorNF
+
+txtSQL = "SELECT TBL_Atestes.* FROM TBL_Atestes " & _
+    "WHERE (((TBL_Atestes.CodContratos)=" & CodContratos & ") " & _
+    "AND ((TBL_Atestes.NumAteste)=" & NumeroAteste & ") " & _
+    "AND ((TBL_Atestes.AnoAteste)=" & AnoAteste & "));"
+
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+
+'Preenche outros campos
+Me.DataPrevPgto.Value = Format(rst!DataPagamento, "dd/mm/yyyy")
+Me.RecebimentoNF.Value = Format(rst!DataRecebimento, "dd/mm/yyyy")
+Me.CompetenciaServico.Value = rst!Competencia
+Me.cmdRepactuacao.Value = rst!Repact
+Me.NumCompromisso.Value = rst!Compromisso
+Me.ValorMulta.Value = rst!ValorMulta
+Me.ValorGlosa.Value = rst!ValorGlosa
+Me.ValorRetencao.Value = rst!ValorRetencao
+Me.TipoRetencao.Value = rst!TipoRetencao
+Me.EventoRetencao.Value = rst!EventoRetencao
+Me.MotivoMultaRetencao.Value = rst!MotivoMultaRetencao
+Me.Observacao.Value = rst!Observacao
+Me.MesCompetencia.Value = rst!MesCompetPgto
+Me.AnoCompetencia.Value = rst!AnoCompetPgto
+Me.Local.Value = "São Paulo"
+Me.DiaEnvio.Value = Day(rst!DataRegistro)
+If Month(rst!DataRegistro) = 1 Then Me.MesEnvio.Value = "Janeiro"
+If Month(rst!DataRegistro) = 2 Then Me.MesEnvio.Value = "Fevereiro"
+If Month(rst!DataRegistro) = 3 Then Me.MesEnvio.Value = "Março"
+If Month(rst!DataRegistro) = 4 Then Me.MesEnvio.Value = "Abril"
+If Month(rst!DataRegistro) = 5 Then Me.MesEnvio.Value = "Maio"
+If Month(rst!DataRegistro) = 6 Then Me.MesEnvio.Value = "Junho"
+If Month(rst!DataRegistro) = 7 Then Me.MesEnvio.Value = "Julho"
+If Month(rst!DataRegistro) = 8 Then Me.MesEnvio.Value = "Agosto"
+If Month(rst!DataRegistro) = 9 Then Me.MesEnvio.Value = "Setembro"
+If Month(rst!DataRegistro) = 10 Then Me.MesEnvio.Value = "Outubro"
+If Month(rst!DataRegistro) = 11 Then Me.MesEnvio.Value = "Novembro"
+If Month(rst!DataRegistro) = 12 Then Me.MesEnvio.Value = "Dezembro"
+Me.AnoEnvio.Value = Year(rst!DataRegistro)
+
+Me.lstNF.RowSource = "SELECT TBL_NF.CNPJdaNF AS CNPJ, TBL_NF.TipoNF AS Tipo, TBL_NF.NumeroNF AS N, TBL_NF.SerieNF AS Serie, format(TBL_NF.DataEmissaoNF,'dd/mm/yyyy') AS Emissão, TBL_NF.ValorNF AS Valor, TBL_NF.MunicipioServicoNF as Município, TBL_NF.ValorIsentoISSQN as Isento, TBL_NF.AliquotaNF as Aliq, TBL_NF.Destino " & _
+                    "FROM TBL_NF WHERE (((TBL_NF.NumAteste)=" & NumeroAteste & ") AND ((TBL_NF.AnoAteste)=" & AnoAteste & "));"
+
+
+End Sub
+Private Sub cmd_DesconsiderarPgto_Click()
+'Remove o Pgto da TBL_PgtosManual
+Dim rst As Recordset
+Dim txtSQL As String
+
+On Error GoTo HandleErr
+
+txtSQL = "SELECT TBL_PagamentosManual.* FROM TBL_PgtosManual;"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+Do While Not rst.EOF
+    If rst!Compromisso = Me.NumCompromisso.Value And _
+       rst!MesCompet = Me.MesCompetencia.Value And _
+       rst!AnoCompet = Me.AnoCompetencia.Value And _
+       rst!PrevPgto = Me.DataPrevPgto.Value And _
+       rst!Valor = Me.ValorPgto.Value Then
+        rst.Delete
+        Exit Do
+    End If
+    rst.MoveNext
+Loop
+'DoCmd.OpenForm "FRM_Ateste_1_0GerarNovoAteste", acNormal, , , acFormReadOnly
+
+Exit Sub
+
+HandleErr:
+MsgBox ("Não há previsão de pagamento para ser desconsiderado.")
+
+End Sub
+
+Private Sub cmd_EditarPgto_Click()
+
+'Remove o Pgto da TBL_PgtosManual
+Dim rst As Recordset
+Dim txtSQL As String
+
+NumeroAteste = Me.lstAtestes.Column(0)
+AnoAteste = Me.lstAtestes.Column(1)
+CodigoContratos = Me.lstAtestes.Column(6)
+
+On Error GoTo HandleErr
+
+txtSQL = "SELECT TBL_PagamentosManual.* FROM TBL_PagamentosManual;"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+'rst.MoveFirst
+Do While Not rst.EOF
+    If rst!Compromisso = Me.NumCompromisso.Value And _
+       rst!MesCompet = Me.MesCompetencia.Value And _
+       rst!AnoCompet = Me.AnoCompetencia.Value And _
+       rst!PrevPgto = Me.DataPrevPgto.Value And _
+       rst!Valor = Me.ValorPgto.Value Then
+            rst.Delete
+            Exit Do
+    End If
+    rst.MoveNext
+Loop
+DoCmd.OpenForm "FRM_Ateste_1_0GerarNovoAteste", acNormal
+
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![cbo_UF] = Me.cbo_UF.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![cbo_UF].Requery
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![cbo_Tipo] = Me.cbo_Tipo.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![cbo_Tipo].Requery
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![cbo_Contrato].RowSource = "SELECT TBL_Contratos.CodContratos, TBL_Contratos.NomeContrato, format(siges, '000000/0000') as [N SIGES], format(Compromisso, '000000/0000-AA') as Compr FROM TBL_Contratos WHERE (((TBL_Contratos.Tipo)=[Formulários]![FRM_Ateste_1_0GerarNovoAteste]![cbo_Tipo]) AND ((TBL_Contratos.UF)=[Formulários]![FRM_Ateste_1_0GerarNovoAteste]![cbo_UF]) AND ((TBL_Contratos.Situacao)='Ativo'));"
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![cbo_Contrato] = Me.cbo_Contrato.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![cbo_Contrato].Requery
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![Fornecedor] = Me.Fornecedor.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![NumeroProcesso] = Me.NumeroProcesso.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![CNPJ] = Me.CNPJ.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![NumCompromisso] = Me.NumCompromisso.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![cbo_TipoPgto] = Me.cbo_TipoPgto.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![NumBanco] = Me.NumBanco.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![NumAgencia] = Me.NumAgencia.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![NumOperacao] = Me.NumOperacao.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![NumContaCorrente] = Me.NumContaCorrente.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![DescricaoObj] = Me.DescricaoObj.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![RecebimentoNF] = Me.RecebimentoNF.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![DataPrevPgto] = Me.DataPrevPgto.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![ValorPgto] = Me.ValorPgto.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![CompetenciaServico] = Me.CompetenciaServico.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![cmdRepactuacao] = Me.cmdRepactuacao.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![MesCompetencia] = Me.MesCompetencia.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![AnoCompetencia] = Me.AnoCompetencia.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![VencimentoDoContrato] = Me.VencimentoDoContrato.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![ValorRetencao] = Me.ValorRetencao.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![TipoRetencao] = Me.TipoRetencao.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![EventoRetencao] = Me.EventoRetencao.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![ValorMulta] = Me.ValorMulta.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![ValorGlosa] = Me.ValorGlosa.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![MotivoMultaRetencao] = Me.MotivoMultaRetencao.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![Observacao] = Me.Observacao.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![Local] = Me.Local.Value
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![DiaEnvio] = Day(Now())
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![MesEnvio] = Month(Now())
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![AnoEnvio] = Year(Now())
+
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![SaldoContrato] = SaldoDoContrato(CodigoContratos)
+
+txtSQL = "SELECT TBL_NF.* FROM TBL_NF WHERE (((TBL_NF.NumAteste)=" & NumeroAteste & ") AND ((TBL_NF.AnoAteste)=" & AnoAteste & "));"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+Dim rst2 As Recordset
+txtSQL = "SELECT TBL_NF_Temp.* FROM TBL_NF_Temp;"
+Set rst2 = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+
+rst.MoveFirst
+Do While Not rst.EOF
+    rst2.AddNew
+    rst2!CNPJdaNF = rst!CNPJdaNF
+    rst2!TipoNF = rst!TipoNF
+    rst2!NumeroNF = rst!NumeroNF
+    rst2!SerieNF = rst!SerieNF
+    rst2!DataEmissaoNF = rst!DataEmissaoNF
+    rst2!ValorNF = rst!ValorNF
+    rst2!MunicipioServicoNF = rst!MunicipioServicoNF
+    rst2!ValorIsentoISSQN = rst!ValorIsentoISSQN
+    rst2!AliquotaNF = rst!AliquotaNF
+    rst2!Destino = rst!Destino
+    rst2!TipoServico = rst!TipoServico
+    rst2.Update
+    rst.MoveNext
+Loop
+
+[Forms]![FRM_Ateste_1_0GerarNovoAteste]![lstNF].Requery
+
+DoCmd.OpenForm "FRM_Ateste_3_0SegViaAteste", acNormal
+DoCmd.Close
+DoCmd.OpenForm "FRM_Ateste_1_0GerarNovoAteste", acNormal
+
+'Muda o estado para "Substituído: Sim"
+txtSQL = "SELECT TBL_Atestes.* FROM TBL_Atestes;"
+Set rst = CurrentDb.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+
+Do While Not rst.EOF
+    If rst!NumAteste = NumeroAteste And rst!AnoAteste = AnoAteste Then
+        rst.Edit
+        rst!Substituído = 1
+        rst.Update
+        Exit Do
+    End If
+    rst.MoveNext
+Loop
+
+Exit Sub
+
+HandleErr:
+DoCmd.OpenForm "FRM_Ateste_1_0GerarNovoAteste", acNormal, , , acFormReadOnly
+
+Erro:
+MsgBox ("Erro")
+
+
+End Sub
+Private Function SaldoDoContrato(CodContratos)
+Dim txtSQL As String
+Dim rst As DAO.Recordset
+Dim db As DAO.Database
+
+On Error GoTo Erro
+
+txtSQL = "SELECT QRY__FRM_ContratosVisaoGeral.CodContratos,  " & _
+    "IIf([DiasVigencia8]+[mesesvigencia8]>0,8,IIf([DiasVigencia7]+[mesesvigencia7]>0,7,IIf([DiasVigencia6]+[mesesvigencia6]>0,6, " & _
+    "IIf([DiasVigencia5]+[mesesvigencia5]>0,5,IIf([DiasVigencia4]+[mesesvigencia4]>0,4,IIf([DiasVigencia3]+[mesesvigencia3]>0,3, " & _
+    "IIf([DiasVigencia2]+[mesesvigencia2]>0,2,IIf([DiasVigencia1]+[mesesvigencia1]>0,1,0)))))))) AS Vig,  " & _
+    "IIf([DiasVigencia8]+[mesesvigencia8]>0,[SaldoContrato8],IIf([DiasVigencia7]+[mesesvigencia7]>0,[SaldoContrato7], " & _
+    "IIf([DiasVigencia6]+[mesesvigencia6]>0,[SaldoContrato6],IIf([DiasVigencia5]+[mesesvigencia5]>0,[SaldoContrato5], " & _
+    "IIf([DiasVigencia4]+[mesesvigencia4]>0,[SaldoContrato4],IIf([DiasVigencia3]+[mesesvigencia3]>0,[SaldoContrato3], " & _
+    "IIf([DiasVigencia2]+[mesesvigencia2]>0,[SaldoContrato2],IIf([DiasVigencia1]+[mesesvigencia1]>0,[SaldoContrato1],[SaldoContrato0])))))))) AS Saldo " & _
+    "FROM QRY__FRM_ContratosVisaoGeral " & _
+    "WHERE CodContratos = " & CodContratos & ";"
+
+Set db = CurrentDb
+Set rst = db.OpenRecordset(txtSQL, dbOpenDynaset, dbFailOnError + dbSeeChanges)
+rst.MoveFirst
+
+SaldoDoContrato = rst.Fields("Saldo").Value
+Exit Function
+
+Erro:
+If Err = 3021 Then
+    SaldoDoContrato = 0
+Else
+    MsgBox ("Erro")
+End If
+
+End Function
+
+
+
+
+
