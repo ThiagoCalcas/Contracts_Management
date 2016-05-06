@@ -1,0 +1,84 @@
+/* 
+Esta query apresenta o Mês e Ano de competência dos Pagamentos mais recentes, por Contrato e por Prorrogação 
+Utilizada pela QRY__FRM_ContratosVisaoGeral 
+*/
+
+SELECT 
+QRY_Anterior3.CodContratos, 
+Right([UltimoPgto0],2) AS MesUltimoPgto0, 
+Left([UltimoPgto0],4) AS AnoUltimoPgto0, 
+Right([UltimoPgto1],2) AS MesUltimoPgto1, 
+Left([UltimoPgto1],4) AS AnoUltimoPgto1, 
+Right([UltimoPgto2],2) AS MesUltimoPgto2, 
+Left([UltimoPgto2],4) AS AnoUltimoPgto2, 
+Right([UltimoPgto3],2) AS MesUltimoPgto3, 
+Left([UltimoPgto3],4) AS AnoUltimoPgto3, 
+Right([UltimoPgto4],2) AS MesUltimoPgto4, 
+Left([UltimoPgto4],4) AS AnoUltimoPgto4, 
+Right([UltimoPgto5],2) AS MesUltimoPgto5, 
+Left([UltimoPgto5],4) AS AnoUltimoPgto5, 
+Right([UltimoPgto6],2) AS MesUltimoPgto6, 
+Left([UltimoPgto6],4) AS AnoUltimoPgto6, 
+Right([UltimoPgto7],2) AS MesUltimoPgto7, 
+Left([UltimoPgto7],4) AS AnoUltimoPgto7, 
+Right([UltimoPgto8],2) AS MesUltimoPgto8, 
+Left([UltimoPgto8],4) AS AnoUltimoPgto8
+
+FROM (
+
+SELECT 
+QRY_Anterior2.CodContratos, 
+Max(CASE WHEN [NumeroProrrogacao]=0 THEN [MáxDeContemMesAno] ELSE 0 END) AS UltimoPgto0, 
+Max(CASE WHEN [NumeroProrrogacao]=1 THEN [MáxDeContemMesAno] ELSE 0 END) AS UltimoPgto1, 
+Max(CASE WHEN [NumeroProrrogacao]=2 THEN [MáxDeContemMesAno] ELSE 0 END) AS UltimoPgto2, 
+Max(CASE WHEN [NumeroProrrogacao]=3 THEN [MáxDeContemMesAno] ELSE 0 END) AS UltimoPgto3, 
+Max(CASE WHEN [NumeroProrrogacao]=4 THEN [MáxDeContemMesAno] ELSE 0 END) AS UltimoPgto4, 
+Max(CASE WHEN [NumeroProrrogacao]=5 THEN [MáxDeContemMesAno] ELSE 0 END) AS UltimoPgto5, 
+Max(CASE WHEN [NumeroProrrogacao]=6 THEN [MáxDeContemMesAno] ELSE 0 END) AS UltimoPgto6, 
+Max(CASE WHEN [NumeroProrrogacao]=7 THEN [MáxDeContemMesAno] ELSE 0 END) AS UltimoPgto7, 
+Max(CASE WHEN [NumeroProrrogacao]=8 THEN [MáxDeContemMesAno] ELSE 0 END) AS UltimoPgto8 
+
+FROM (
+
+SELECT 
+QRY_Anterior.CodContratos, 
+QRY_Anterior.NumeroProrrogacao, 
+Max(QRY_Anterior.ContemMesAno) AS MáxDeContemMesAno 
+
+FROM (
+
+SELECT 
+TBL_Contratos.CodContratos, 
+TBL_Contratos.NomeContrato, 
+TBL_Prorrogacoes.CodProrrogacoes ,
+TBL_Prorrogacoes.NumeroProrrogacao, 
+TBL_Prorrogacoes.ProrrDataFim, 
+(DATEPART ( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ) AS MesAnoProrrInicio, 
+(DATEPART ( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) ) AS MesAnoProrrFim, 
+TBL_Pagamentos.[MesCompet], 
+TBL_Pagamentos.[AnoCompet], 
+
+[AnoCompet]*100+[MesCompet] AS MesAnoCompet, 
+
+(CASE WHEN ([AnoCompet]*100+[MesCompet]) <= (DATEPART ( year , [ProrrDataFim] ) *100 + DATEPART ( mm , [ProrrDataFim] ) )THEN
+   CASE WHEN ([AnoCompet]*100+[MesCompet]) >= (DATEPART ( year , [ProrrDataInicio] ) *100 + DATEPART ( mm , [ProrrDataInicio] ) ) THEN
+   [AnoCompet]*100+[MesCompet] ELSE 0 END 
+ELSE 0 END) AS ContemMesAno,
+
+TBL_Contratos.Situacao 
+
+FROM 
+TBL_Prorrogacoes LEFT JOIN (TBL_Contratos LEFT JOIN TBL_Pagamentos ON TBL_Contratos.Compromisso= TBL_Pagamentos.Compromisso) ON TBL_Prorrogacoes.CodContratos= TBL_Contratos.CodContratos 
+
+WHERE 
+(((TBL_Contratos.Situacao)='Ativo')) 
+
+)  AS QRY_Anterior 
+
+GROUP BY 
+QRY_Anterior.CodContratos, QRY_Anterior.NumeroProrrogacao
+
+)  AS QRY_Anterior2 
+GROUP BY QRY_Anterior2.CodContratos
+
+)  AS QRY_Anterior3;
