@@ -1,0 +1,247 @@
+SELECT
+CodContratos,
+Maior_1,
+Maior_2,
+Maior_3,
+CASE WHEN [Maior_1] = 0 and [Maior_2] = 0 then [Maior_3]
+WHEN [Maior_2] = 0 and [Maior_3] = 0 then [Maior_1]
+WHEN [Maior_1] = 0 and [Maior_3] = 0 then [Maior_2]
+WHEN [Maior_1] = 0 then ([Maior_2]+[Maior_3])/2
+WHEN [Maior_2] = 0 then ([Maior_1]+[Maior_3])/2
+WHEN [Maior_3] = 0 then ([Maior_1]+[Maior_2])/2
+ELSE ([Maior_1]+[Maior_2]+[Maior_3])/3
+END AS [Media_3-5_Meses]
+
+FROM (
+
+SELECT 
+CodContratos,
+SomaDeValor_M1,
+SomaDeValor_M2,
+SomaDeValor_M3,
+SomaDeValor_M4,
+SomaDeValor_M5,
+Maior_1,
+Maior_2,
+
+CASE WHEN [SomaDeValor_M1] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M2] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M3]>[SomaDeValor_M4] and [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M3] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M2]>[SomaDeValor_M4] and [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M4] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M2]>[SomaDeValor_M3] and [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M5] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M2]>[SomaDeValor_M3] and [SomaDeValor_M2]>[SomaDeValor_M4] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M4] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M4] END
+END
+
+WHEN [SomaDeValor_M2] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M1] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M3]>[SomaDeValor_M4] and [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M3] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M4] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M4] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M3] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M5] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M3] and [SomaDeValor_M1]>[SomaDeValor_M4] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M4] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M4] END
+END
+
+WHEN [SomaDeValor_M3] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M1] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M2]>[SomaDeValor_M4] and [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M2] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M4] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M4] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M5] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M4] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M4] then [SomaDeValor_M2]
+ELSE [SomaDeValor_M4] END
+END
+
+WHEN [SomaDeValor_M4] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M1] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M2]>[SomaDeValor_M3] and [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M2] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M3] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M3] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+ELSE [SomaDeValor_M5] END
+WHEN [SomaDeValor_M5] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M3] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M3] then [SomaDeValor_M2]
+ELSE [SomaDeValor_M3] END
+END
+
+WHEN [SomaDeValor_M5] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M1] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M2]>[SomaDeValor_M3] and [SomaDeValor_M2]>[SomaDeValor_M4] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M4] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M4] END
+WHEN [SomaDeValor_M2] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M3] and [SomaDeValor_M1]>[SomaDeValor_M4] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M4] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M4] END
+WHEN [SomaDeValor_M3] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M4] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M4] then [SomaDeValor_M2]
+ELSE [SomaDeValor_M4] END
+WHEN [SomaDeValor_M4] = [Maior_2] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M3] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M3] then [SomaDeValor_M2]
+ELSE [SomaDeValor_M3] END
+END
+
+END
+
+ AS Maior_3
+
+FROM (
+
+SELECT 
+CodContratos,
+SomaDeValor_M1,
+SomaDeValor_M2,
+SomaDeValor_M3,
+SomaDeValor_M4,
+SomaDeValor_M5,
+Maior_1,
+CASE WHEN [SomaDeValor_M1] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M2]>[SomaDeValor_M3] and [SomaDeValor_M2]>[SomaDeValor_M4] and [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M4] and [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5]
+END
+WHEN [SomaDeValor_M2] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M3] and [SomaDeValor_M1]>[SomaDeValor_M4] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M4] and [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5]
+END
+WHEN [SomaDeValor_M3] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M4] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M4] and [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5]
+END
+WHEN [SomaDeValor_M4] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M3] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M3] and [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M5]
+END
+WHEN [SomaDeValor_M5] = [Maior_1] THEN
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M3] and [SomaDeValor_M1]>[SomaDeValor_M4] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M3] and [SomaDeValor_M2]>[SomaDeValor_M4] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M4] then [SomaDeValor_M3]
+ELSE [SomaDeValor_M4]
+END
+END as Maior_2
+
+FROM(
+SELECT
+CodContratos,
+SomaDeValor_M1,
+SomaDeValor_M2,
+SomaDeValor_M3,
+SomaDeValor_M4,
+SomaDeValor_M5,
+CASE WHEN [SomaDeValor_M1]>[SomaDeValor_M2] and [SomaDeValor_M1]>[SomaDeValor_M3] and [SomaDeValor_M1]>[SomaDeValor_M4] and [SomaDeValor_M1]>[SomaDeValor_M5] then [SomaDeValor_M1]
+WHEN [SomaDeValor_M2]>[SomaDeValor_M3] and [SomaDeValor_M2]>[SomaDeValor_M4] and [SomaDeValor_M2]>[SomaDeValor_M5] then [SomaDeValor_M2]
+WHEN [SomaDeValor_M3]>[SomaDeValor_M4] and [SomaDeValor_M3]>[SomaDeValor_M5] then [SomaDeValor_M3]
+WHEN [SomaDeValor_M4]>[SomaDeValor_M5] then [SomaDeValor_M4]
+ELSE [SomaDeValor_M5]
+END as Maior_1
+
+FROM (
+
+SELECT
+CodContratos,
+UltimoPgto,
+PenultimoPgto,
+AntePenultimoPgto,
+AnteAntePenultimoPgto,
+AnteAnteAntePenultimoPgto,
+SUM(Valor_M1) AS SomaDeValor_M1,
+SUM(Valor_M2) AS SomaDeValor_M2,
+SUM(Valor_M3) AS SomaDeValor_M3,
+SUM(Valor_M4) AS SomaDeValor_M4,
+SUM(Valor_M5) AS SomaDeValor_M5
+FROM (
+SELECT
+QRY_9.CodContratos,
+UltimoPgto,
+PenultimoPgto,
+AntePenultimoPgto,
+AnteAntePenultimoPgto,
+AnteAnteAntePenultimoPgto,
+(CASE WHEN [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END=[UltimoPgto] THEN [Valor] ELSE 0 END) AS Valor_M1,
+(CASE WHEN [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END=[PenultimoPgto] THEN [Valor] ELSE 0 END) AS Valor_M2,
+(CASE WHEN [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END=[AntePenultimoPgto] THEN [Valor] ELSE 0 END) AS Valor_M3,
+(CASE WHEN [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END=[AnteAntePenultimoPgto] THEN [Valor] ELSE 0 END) AS Valor_M4,
+(CASE WHEN [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END=[AnteAnteAntePenultimoPgto] THEN [Valor] ELSE 0 END) AS Valor_M5
+
+FROM (
+SELECT QRY_8.CodContratos, QRY_8.UltimoPgto, QRY_8.PenultimoPgto, QRY_8.AntePenultimoPgto, QRY_8.AnteAntePenultimoPgto, Max(QRY_8.MesAnoPgto) AS AnteAnteAntePenultimoPgto
+FROM (SELECT QRY_7.CodContratos, QRY_7.UltimoPgto, QRY_7.PenultimoPgto, QRY_7.AntePenultimoPgto, QRY_7.AnteAntePenultimoPgto, 
+CASE WHEN [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END >= [AnteAntePenultimoPgto] THEN 0 ELSE [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END END AS MesAnoPgto
+FROM (SELECT QRY_6.CodContratos, QRY_6.Compromisso, QRY_6.UltimoPgto, QRY_6.PenultimoPgto, AntePenultimoPgto, Max(QRY_6.MesAnoPgto) AS AnteAntePenultimoPgto
+FROM (SELECT QRY_5.CodContratos, QRY_5.Compromisso, QRY_5.UltimoPgto, QRY_5.PenultimoPgto, QRY_5.AntePenultimoPgto, 
+CASE WHEN [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END >= [AntePenultimoPgto] THEN 0 ELSE [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END END AS MesAnoPgto
+FROM TBL_Pagamentos INNER JOIN ((SELECT CodContratos, Compromisso, UltimoPgto, PenultimoPgto, Max(MesAnoPgto) AS AntePenultimoPgto
+FROM (SELECT QRY_3.CodContratos, QRY_3.Compromisso, QRY_3.UltimoPgto, QRY_3.PenultimoPgto, 
+CASE WHEN [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END >= [PenultimoPgto] THEN 0 ELSE [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END END AS MesAnoPgto
+FROM (SELECT QRY_2.CodContratos, QRY_2.Compromisso, QRY_2.UltimoPgto, Max(QRY_2.MesAnoPgto) AS PenultimoPgto
+FROM (SELECT QRY_1.CodContratos, QRY_1.Compromisso, QRY_1.UltimoPgto, 
+CASE WHEN [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END >= [UltimoPgto] THEN 0 ELSE [AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END END AS MesAnoPgto
+FROM TBL_Pagamentos INNER JOIN ((SELECT TBL_Contratos.CodContratos, TBL_Contratos.Compromisso, Max([AnoPgto]*10000+[MesPgto]*100+CASE WHEN len(PrevPagto)=8 THEN left(PrevPagto,2) ELSE left(PrevPagto,1) END ) AS UltimoPgto
+FROM TBL_Pagamentos INNER JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso
+GROUP BY TBL_Contratos.CodContratos, TBL_Contratos.Compromisso
+
+)  AS QRY_1 INNER JOIN TBL_Contratos ON QRY_1.CodContratos = TBL_Contratos.CodContratos) ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso
+)  AS QRY_2
+GROUP BY QRY_2.CodContratos, QRY_2.Compromisso, QRY_2.UltimoPgto
+)  AS QRY_3 INNER JOIN (TBL_Pagamentos INNER JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) ON QRY_3.CodContratos = TBL_Contratos.CodContratos
+)  AS QRY_4
+GROUP BY CodContratos, Compromisso, UltimoPgto, PenultimoPgto
+)  AS QRY_5 INNER JOIN TBL_Contratos ON QRY_5.CodContratos = TBL_Contratos.CodContratos) ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso
+)  AS QRY_6
+GROUP BY QRY_6.CodContratos, QRY_6.Compromisso, QRY_6.UltimoPgto, QRY_6.PenultimoPgto, AntePenultimoPgto
+)  AS QRY_7 INNER JOIN (TBL_Pagamentos INNER JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) ON QRY_7.CodContratos = TBL_Contratos.CodContratos
+)  AS QRY_8
+GROUP BY CodContratos, QRY_8.UltimoPgto, QRY_8.PenultimoPgto, QRY_8.AntePenultimoPgto, QRY_8.AnteAntePenultimoPgto
+)  AS QRY_9 INNER JOIN (TBL_Pagamentos INNER JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) ON QRY_9.CodContratos = TBL_Contratos.CodContratos
+) AS QRY_10
+GROUP BY CodContratos, UltimoPgto,PenultimoPgto,AntePenultimoPgto,AnteAntePenultimoPgto,AnteAnteAntePenultimoPgto
+)  AS QRY_11
+)  AS QRY_12
+)  AS QRY_13
+)  AS QRY_14
+;
