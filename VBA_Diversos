@@ -1,0 +1,525 @@
+Option Compare Database
+
+Public Function Exporta(txtQRY As String, Exclui As Boolean)
+DoCmd.SetWarnings False 'Tira os avisos que atrapalham a execução da macro
+
+'Query filtrando os Preços para o Contrato selecionado
+'para exportar para Excel
+Dim NomeSaidaArquivo As String
+Dim txtSQL As String
+Dim qdf As DAO.QueryDef
+Dim db As DAO.Database
+Dim rst As DAO.Recordset
+Dim Existe As Boolean
+Dim TamanhosColunas As String
+Dim InicioTamanhosColunas As Integer
+Dim FimTamanhosColunas As Integer
+Dim i As Integer
+Dim NumeroColuna As Integer
+
+'Verifica se existe já uma Qry e apaga ela
+Existe = False
+For Each qdf In CurrentDb.QueryDefs
+    If qdf.Name = txtQRY Then
+        Existe = True
+        Exit For
+    End If
+Next
+If Existe = True Then DoCmd.DeleteObject acQuery, txtQRY
+
+'Acha o texto da Query na TBL_Querys
+txtSQL = "SELECT TBL_Querys.* FROM TBL_Querys;" '\/
+Set db = CurrentDb
+Set rst = db.OpenRecordset(txtSQL)
+rst.MoveFirst 'vai para a primeira linha da QRY
+Do While Not rst.EOF 'loop por todos os registros da TBL_Querys
+    If txtQRY = rst.Fields("txtQRY").Value Then
+        If IsNull(rst.Fields("txtSQL").Value) = False Then
+            txtSQL = rst.Fields("txtSQL").Value
+            NomeSaidaArquivo = rst.Fields("NomeSaidaArquivo").Value
+            Exit Do
+        End If
+    End If
+    rst.MoveNext
+Loop
+
+'Cria a query de exportação
+'Código SQL da query
+Set qdf = CurrentDb.CreateQueryDef(txtQRY, txtSQL)
+
+'Exporta para excel e deleta o objeto da query
+DoCmd.OutputTo acOutputQuery, txtQRY, acFormatXLSX, NomeSaidaArquivo, -1
+If Exclui = True Then DoCmd.DeleteObject acQuery, txtQRY
+
+Exporta = NomeSaidaArquivo
+
+'Acerta o tamanho das colunas do arquivo de saída
+'Dim xlObj As Object
+'Set xlObj = CreateObject("excel.application")
+'xlObj.Workbooks.Open NomeSaidaArquivo
+'For i = 1 To 100
+'    xlObj.Columns(i).ColumnWidth = 200
+'Next
+'
+'xlObj.ActiveSheet.UsedRange.Columns.AutoFit
+'xlObj.ActiveSheet.UsedRange.Rows.AutoFit
+'xlObj.ActiveWorkbook.Save
+'Set xlObj = Nothing
+
+End Function
+Public Sub SetStartupOptions(propname As String, _
+ propdb As Variant, prop As Variant)
+  'Set passed startup property.
+  Dim dbs As Object
+  Dim prp As Object
+  Set dbs = CurrentDb
+  On Error Resume Next
+  dbs.Properties(propname) = prop
+  If Err.Number = 3270 Then
+    Set prp = dbs.CreateProperty(propname, _
+     propdb, prop)
+    dbs.Properties.Append prp
+  End If
+  Set dbs = Nothing
+  Set prp = Nothing
+End Sub
+
+Public Function AccessVersionID() As String
+
+   Select Case SysCmd(acSysCmdAccessVer)
+         Case 7: AccessVersionID = "95"
+         Case 8: AccessVersionID = "97"
+         Case 9: AccessVersionID = "2000"
+         Case 10: AccessVersionID = "2002"
+         Case 11: AccessVersionID = "2003"
+         Case 12: AccessVersionID = "2007"
+         Case 13: AccessVersionID = "Pirated!"
+         Case 14: AccessVersionID = "2010"
+         Case 15: AccessVersionID = "2013"
+         Case Else: AccessVersionID = "Unknown"
+   End Select
+
+ End Function            'AccessVersionID()
+ 
+Public Function RefExiste(RefName As String) As String
+    Dim ref As Object
+    RefExiste = False
+
+    For Each ref In References
+        If ref.Name = RefName Then
+            RefExiste = True
+        End If
+    Next
+End Function
+
+Public Sub DeleteRef(RefName)
+
+  Dim ref As Reference
+
+    If RefExiste("Excel") = True Then
+        'You need a reference to remove
+        Set ref = References(RefName)
+        References.Remove ref
+    End If
+   
+  End Sub
+   
+Public Function ReferenceFromFile(strFileName As String) As Boolean
+    Dim ref As Reference
+
+    On Error GoTo Error_ReferenceFromFile
+    References.AddFromFile (strFileName)
+    ReferenceFromFile = True
+
+Exit_ReferenceFromFile:
+    Exit Function
+
+Error_ReferenceFromFile:
+    ReferenceFromFile = False
+    Resume Exit_ReferenceFromFile
+
+End Function
+
+Public Function VerificaAcesso()
+'Determina qual a versão que o usuário está autorizado a utilizar
+Dim txtSQL As String
+txtSQL = "SELECT TBL_Usuarios.* FROM TBL_Usuarios;" '\/
+Dim rst As Recordset                            '\/
+Set rst = CurrentDb.OpenRecordset(txtSQL)
+rst.MoveFirst 'vai para a primeira linha da QRY
+Dim Usuario As String
+Usuario = Environ("USERNAME") 'Identifica o usuário que está mexendo no Access
+Do While Not rst.EOF 'loop por todos os registros da matriz de acesso (TBL_Usuarios)
+    If Usuario = rst.Fields("Matricula").Value Then
+        If IsNull(rst.Fields("TipoAcesso").Value) = False Then
+            VerificaAcesso = rst.Fields("TipoAcesso").Value 'Acha qual o tipo de acesso para o usuário
+        End If
+    End If
+    rst.MoveNext
+Loop
+End Function
+
+Public Sub TransformaColunaEmNumero(NomeArquivo As String, Coluna1 As Integer, Optional Coluna2 As Integer, Optional Coluna3 As Integer, Optional Coluna4 As Integer, Optional Coluna5 As Integer, Optional Coluna6 As Integer, Optional Coluna7 As Integer, Optional Coluna8 As Integer, Optional Coluna9 As Integer, Optional Coluna10 As Integer)
+Dim i As Integer
+Dim Xl As Object
+Dim XlBook As Object
+Dim xlsheet1 As Object
+
+'Verifica se o Excel já está aberto
+On Error Resume Next
+Set Xl = GetObject(, "Excel.Application")
+On Error GoTo 0
+If Xl Is Nothing Then
+  Set Xl = CreateObject("Excel.Application")
+End If
+
+Set XlBook = GetObject(NomeArquivo)
+
+'Mantem o Excel visível
+Xl.Visible = True
+XlBook.Windows(1).Visible = True
+
+'Define a planilha que vai ser alterada
+Set xlsheet1 = XlBook.Worksheets(1)
+
+If IsNull(Coluna2) Then Coluna2 = 0
+If IsNull(Coluna3) Then Coluna3 = 0
+If IsNull(Coluna4) Then Coluna4 = 0
+If IsNull(Coluna5) Then Coluna5 = 0
+If IsNull(Coluna6) Then Coluna6 = 0
+If IsNull(Coluna7) Then Coluna7 = 0
+If IsNull(Coluna8) Then Coluna8 = 0
+If IsNull(Coluna9) Then Coluna9 = 0
+If IsNull(Coluna10) Then Coluna10 = 0
+
+'Altera os campos para Número
+i = 2
+Do While xlsheet1.Cells(i, 1) <> Clear
+    If xlsheet1.Cells(i, Coluna1) <> Clear Then xlsheet1.Cells(i, Coluna1) = CDbl(xlsheet1.Cells(i, Coluna1))
+    If Coluna2 <> 0 Then If xlsheet1.Cells(i, Coluna2) <> Clear Then xlsheet1.Cells(i, Coluna2) = CDbl(xlsheet1.Cells(i, Coluna2))
+    If Coluna3 <> 0 Then If xlsheet1.Cells(i, Coluna3) <> Clear Then xlsheet1.Cells(i, Coluna3) = CDbl(xlsheet1.Cells(i, Coluna3))
+    If Coluna4 <> 0 Then If xlsheet1.Cells(i, Coluna4) <> Clear Then xlsheet1.Cells(i, Coluna4) = CDbl(xlsheet1.Cells(i, Coluna4))
+    If Coluna5 <> 0 Then If xlsheet1.Cells(i, Coluna5) <> Clear Then xlsheet1.Cells(i, Coluna5) = CDbl(xlsheet1.Cells(i, Coluna5))
+    If Coluna6 <> 0 Then If xlsheet1.Cells(i, Coluna6) <> Clear Then xlsheet1.Cells(i, Coluna6) = CDbl(xlsheet1.Cells(i, Coluna6))
+    If Coluna7 <> 0 Then If xlsheet1.Cells(i, Coluna7) <> Clear Then xlsheet1.Cells(i, Coluna7) = CDbl(xlsheet1.Cells(i, Coluna7))
+    If Coluna8 <> 0 Then If xlsheet1.Cells(i, Coluna8) <> Clear Then xlsheet1.Cells(i, Coluna8) = CDbl(xlsheet1.Cells(i, Coluna8))
+    If Coluna9 <> 0 Then If xlsheet1.Cells(i, Coluna9) <> Clear Then xlsheet1.Cells(i, Coluna9) = CDbl(xlsheet1.Cells(i, Coluna9))
+    If Coluna10 <> 0 Then If xlsheet1.Cells(i, Coluna10) <> Clear Then xlsheet1.Cells(i, Coluna10) = CDbl(xlsheet1.Cells(i, Coluna10))
+    i = i + 1
+Loop
+
+    xlsheet1.Range(Coluna(Coluna1)).NumberFormat = "#,##0.00"
+    If Coluna2 <> 0 Then xlsheet1.Range(Coluna(Coluna2)).NumberFormat = "#,##0.00"
+    If Coluna3 <> 0 Then xlsheet1.Range(Coluna(Coluna3)).NumberFormat = "#,##0.00"
+    If Coluna4 <> 0 Then xlsheet1.Range(Coluna(Coluna4)).NumberFormat = "#,##0.00"
+    If Coluna5 <> 0 Then xlsheet1.Range(Coluna(Coluna5)).NumberFormat = "#,##0.00"
+    If Coluna6 <> 0 Then xlsheet1.Range(Coluna(Coluna6)).NumberFormat = "#,##0.00"
+    If Coluna7 <> 0 Then xlsheet1.Range(Coluna(Coluna7)).NumberFormat = "#,##0.00"
+    If Coluna8 <> 0 Then xlsheet1.Range(Coluna(Coluna8)).NumberFormat = "#,##0.00"
+    If Coluna9 <> 0 Then xlsheet1.Range(Coluna(Coluna9)).NumberFormat = "#,##0.00"
+    If Coluna10 <> 0 Then xlsheet1.Range(Coluna(Coluna10)).NumberFormat = "#,##0.00"
+    
+i = 2
+Do While xlsheet1.Cells(1, i) <> Clear
+    xlsheet1.Range(Coluna(i)).EntireColumn.AutoFit
+    xlsheet1.Range(Coluna(i)).WrapText = True
+    xlsheet1.Range(Coluna(i)).WrapText = False
+    i = i + 1
+Loop
+
+Set xlsheet1 = Nothing
+Set XlBook = Nothing
+Set Xl = Nothing
+
+End Sub
+
+Public Sub TransformaColunaEmPorcento(NomeArquivo As String, Coluna1 As Integer, Optional Coluna2 As Integer, Optional Coluna3 As Integer, Optional Coluna4 As Integer, Optional Coluna5 As Integer, Optional Coluna6 As Integer, Optional Coluna7 As Integer, Optional Coluna8 As Integer, Optional Coluna9 As Integer, Optional Coluna10 As Integer)
+Dim Xl As Object
+Dim XlBook As Object
+Dim xlsheet1 As Object
+Dim i As Integer
+
+'Verifica se o Excel já está aberto
+On Error Resume Next
+Set Xl = GetObject(, "Excel.Application")
+On Error GoTo 0
+If Xl Is Nothing Then
+  Set Xl = CreateObject("Excel.Application")
+End If
+
+Set XlBook = GetObject(NomeArquivo)
+
+'Mantem o Excel visível
+Xl.Visible = True
+XlBook.Windows(1).Visible = True
+
+'Define a planilha que vai ser alterada
+Set xlsheet1 = XlBook.Worksheets(1)
+
+If IsNull(Coluna2) Then Coluna2 = 0
+If IsNull(Coluna3) Then Coluna3 = 0
+If IsNull(Coluna4) Then Coluna4 = 0
+If IsNull(Coluna5) Then Coluna5 = 0
+If IsNull(Coluna6) Then Coluna6 = 0
+If IsNull(Coluna7) Then Coluna7 = 0
+If IsNull(Coluna8) Then Coluna8 = 0
+If IsNull(Coluna9) Then Coluna9 = 0
+If IsNull(Coluna10) Then Coluna10 = 0
+
+'Altera os campos para Número
+i = 2
+Do While xlsheet1.Cells(i, 1) <> Clear
+    If xlsheet1.Cells(i, Coluna1) <> Clear Then xlsheet1.Cells(i, Coluna1) = CDbl(Left(xlsheet1.Cells(i, Coluna1), Len(xlsheet1.Cells(i, Coluna1)) - 1)) / 100
+    If Coluna2 <> 0 Then If xlsheet1.Cells(i, Coluna2) <> Clear Then xlsheet1.Cells(i, Coluna2) = CDbl(Left(xlsheet1.Cells(i, Coluna2), Len(xlsheet1.Cells(i, Coluna2)) - 1)) / 100
+    If Coluna3 <> 0 Then If xlsheet1.Cells(i, Coluna3) <> Clear Then xlsheet1.Cells(i, Coluna3) = CDbl(Left(xlsheet1.Cells(i, Coluna3), Len(xlsheet1.Cells(i, Coluna3)) - 1)) / 100
+    If Coluna4 <> 0 Then If xlsheet1.Cells(i, Coluna4) <> Clear Then xlsheet1.Cells(i, Coluna4) = CDbl(Left(xlsheet1.Cells(i, Coluna4), Len(xlsheet1.Cells(i, Coluna4)) - 1)) / 100
+    If Coluna5 <> 0 Then If xlsheet1.Cells(i, Coluna5) <> Clear Then xlsheet1.Cells(i, Coluna5) = CDbl(Left(xlsheet1.Cells(i, Coluna5), Len(xlsheet1.Cells(i, Coluna5)) - 1)) / 100
+    If Coluna6 <> 0 Then If xlsheet1.Cells(i, Coluna6) <> Clear Then xlsheet1.Cells(i, Coluna6) = CDbl(Left(xlsheet1.Cells(i, Coluna6), Len(xlsheet1.Cells(i, Coluna6)) - 1)) / 100
+    If Coluna7 <> 0 Then If xlsheet1.Cells(i, Coluna7) <> Clear Then xlsheet1.Cells(i, Coluna7) = CDbl(Left(xlsheet1.Cells(i, Coluna7), Len(xlsheet1.Cells(i, Coluna7)) - 1)) / 100
+    If Coluna8 <> 0 Then If xlsheet1.Cells(i, Coluna8) <> Clear Then xlsheet1.Cells(i, Coluna8) = CDbl(Left(xlsheet1.Cells(i, Coluna8), Len(xlsheet1.Cells(i, Coluna8)) - 1)) / 100
+    If Coluna9 <> 0 Then If xlsheet1.Cells(i, Coluna9) <> Clear Then xlsheet1.Cells(i, Coluna9) = CDbl(Left(xlsheet1.Cells(i, Coluna9), Len(xlsheet1.Cells(i, Coluna9)) - 1)) / 100
+    If Coluna10 <> 0 Then If xlsheet1.Cells(i, Coluna10) <> Clear Then xlsheet1.Cells(i, Coluna10) = CDbl(Left(xlsheet1.Cells(i, Coluna10), Len(xlsheet1.Cells(i, Coluna10)) - 1)) / 100
+    i = i + 1
+Loop
+
+    xlsheet1.Range(Coluna(Coluna1)).NumberFormat = "0.00%"
+    If Coluna2 <> 0 Then xlsheet1.Range(Coluna(Coluna2)).NumberFormat = "0.00%"
+    If Coluna3 <> 0 Then xlsheet1.Range(Coluna(Coluna3)).NumberFormat = "0.00%"
+    If Coluna4 <> 0 Then xlsheet1.Range(Coluna(Coluna4)).NumberFormat = "0.00%"
+    If Coluna5 <> 0 Then xlsheet1.Range(Coluna(Coluna5)).NumberFormat = "0.00%"
+    If Coluna6 <> 0 Then xlsheet1.Range(Coluna(Coluna6)).NumberFormat = "0.00%"
+    If Coluna7 <> 0 Then xlsheet1.Range(Coluna(Coluna7)).NumberFormat = "0.00%"
+    If Coluna8 <> 0 Then xlsheet1.Range(Coluna(Coluna8)).NumberFormat = "0.00%"
+    If Coluna9 <> 0 Then xlsheet1.Range(Coluna(Coluna9)).NumberFormat = "0.00%"
+    If Coluna10 <> 0 Then xlsheet1.Range(Coluna(Coluna10)).NumberFormat = "0.00%"
+    
+i = 2
+Do While xlsheet1.Cells(1, i) <> Clear
+    xlsheet1.Range(Coluna(i)).EntireColumn.AutoFit
+    xlsheet1.Range(Coluna(i)).WrapText = True
+    xlsheet1.Range(Coluna(i)).WrapText = False
+    i = i + 1
+Loop
+    
+Set xlsheet1 = Nothing
+Set XlBook = Nothing
+Set Xl = Nothing
+
+End Sub
+
+Public Function Coluna(ValorColuna As Integer)
+
+If ValorColuna = 1 Then Coluna = "A:A"
+If ValorColuna = 2 Then Coluna = "B:B"
+If ValorColuna = 3 Then Coluna = "C:C"
+If ValorColuna = 4 Then Coluna = "D:D"
+If ValorColuna = 5 Then Coluna = "E:E"
+If ValorColuna = 6 Then Coluna = "F:F"
+If ValorColuna = 7 Then Coluna = "G:G"
+If ValorColuna = 8 Then Coluna = "H:H"
+If ValorColuna = 9 Then Coluna = "I:I"
+If ValorColuna = 10 Then Coluna = "J:J"
+If ValorColuna = 11 Then Coluna = "K:K"
+If ValorColuna = 12 Then Coluna = "L:L"
+If ValorColuna = 13 Then Coluna = "M:m"
+If ValorColuna = 14 Then Coluna = "N:N"
+If ValorColuna = 15 Then Coluna = "O:O"
+If ValorColuna = 16 Then Coluna = "P:P"
+If ValorColuna = 17 Then Coluna = "Q:Q"
+If ValorColuna = 18 Then Coluna = "R:R"
+If ValorColuna = 19 Then Coluna = "S:S"
+If ValorColuna = 20 Then Coluna = "T:T"
+If ValorColuna = 21 Then Coluna = "U:U"
+If ValorColuna = 22 Then Coluna = "V:V"
+If ValorColuna = 23 Then Coluna = "W:W"
+If ValorColuna = 24 Then Coluna = "X:X"
+If ValorColuna = 25 Then Coluna = "Y:Y"
+If ValorColuna = 26 Then Coluna = "Z:Z"
+If ValorColuna = 27 Then Coluna = "AA:AA"
+If ValorColuna = 28 Then Coluna = "AB:AB"
+If ValorColuna = 29 Then Coluna = "AC:AC"
+If ValorColuna = 30 Then Coluna = "AD:AD"
+If ValorColuna = 31 Then Coluna = "AE:AE"
+If ValorColuna = 32 Then Coluna = "AF:AF"
+If ValorColuna = 33 Then Coluna = "AG:AG"
+If ValorColuna = 34 Then Coluna = "AH:AH"
+If ValorColuna = 35 Then Coluna = "AI:AI"
+If ValorColuna = 36 Then Coluna = "AJ:AJ"
+If ValorColuna = 37 Then Coluna = "AK:AK"
+If ValorColuna = 38 Then Coluna = "AL:AL"
+If ValorColuna = 39 Then Coluna = "AM:AM"
+If ValorColuna = 40 Then Coluna = "AN:AN"
+If ValorColuna = 41 Then Coluna = "AO:AO"
+If ValorColuna = 42 Then Coluna = "AP:AP"
+If ValorColuna = 43 Then Coluna = "AQ:AQ"
+If ValorColuna = 44 Then Coluna = "AR:AR"
+If ValorColuna = 45 Then Coluna = "AS:AS"
+If ValorColuna = 46 Then Coluna = "AT:AT"
+If ValorColuna = 47 Then Coluna = "AU:AU"
+If ValorColuna = 48 Then Coluna = "AV:AV"
+If ValorColuna = 49 Then Coluna = "AW:AW"
+If ValorColuna = 50 Then Coluna = "AX:AX"
+If ValorColuna = 51 Then Coluna = "AY:AY"
+If ValorColuna = 52 Then Coluna = "AZ:AZ"
+If ValorColuna = 53 Then Coluna = "BA:BA"
+If ValorColuna = 54 Then Coluna = "BB:BB"
+If ValorColuna = 55 Then Coluna = "BC:BC"
+If ValorColuna = 56 Then Coluna = "BD:BD"
+If ValorColuna = 57 Then Coluna = "BE:BE"
+If ValorColuna = 58 Then Coluna = "BF:BF"
+If ValorColuna = 59 Then Coluna = "BG:BG"
+If ValorColuna = 60 Then Coluna = "BH:BH"
+If ValorColuna = 61 Then Coluna = "BI:BI"
+If ValorColuna = 62 Then Coluna = "BJ:BJ"
+If ValorColuna = 63 Then Coluna = "BK:BK"
+If ValorColuna = 64 Then Coluna = "BL:BL"
+If ValorColuna = 65 Then Coluna = "BM:BM"
+If ValorColuna = 66 Then Coluna = "BN:BN"
+If ValorColuna = 67 Then Coluna = "BO:BO"
+If ValorColuna = 68 Then Coluna = "BP:BP"
+If ValorColuna = 69 Then Coluna = "BQ:BQ"
+If ValorColuna = 70 Then Coluna = "BR:BR"
+If ValorColuna = 71 Then Coluna = "BS:BS"
+If ValorColuna = 72 Then Coluna = "BT:BT"
+If ValorColuna = 73 Then Coluna = "BU:BU"
+If ValorColuna = 74 Then Coluna = "BV:BV"
+If ValorColuna = 75 Then Coluna = "BW:BW"
+If ValorColuna = 76 Then Coluna = "BX:BX"
+If ValorColuna = 77 Then Coluna = "BY:BY"
+If ValorColuna = 78 Then Coluna = "BZ:BZ"
+If ValorColuna = 79 Then Coluna = "CA:CA"
+If ValorColuna = 80 Then Coluna = "CB:CB"
+If ValorColuna = 81 Then Coluna = "CC:CC"
+If ValorColuna = 82 Then Coluna = "CD:CD"
+If ValorColuna = 83 Then Coluna = "CE:CE"
+If ValorColuna = 84 Then Coluna = "CF:CF"
+If ValorColuna = 85 Then Coluna = "CG:CG"
+If ValorColuna = 86 Then Coluna = "CH:CH"
+If ValorColuna = 87 Then Coluna = "CI:CI"
+If ValorColuna = 88 Then Coluna = "CJ:CJ"
+If ValorColuna = 89 Then Coluna = "CK:CK"
+If ValorColuna = 90 Then Coluna = "CL:CL"
+If ValorColuna = 91 Then Coluna = "CM:CM"
+If ValorColuna = 92 Then Coluna = "CN:CN"
+If ValorColuna = 93 Then Coluna = "CO:CO"
+If ValorColuna = 94 Then Coluna = "CP:CP"
+If ValorColuna = 95 Then Coluna = "CQ:CQ"
+If ValorColuna = 96 Then Coluna = "CR:CR"
+If ValorColuna = 97 Then Coluna = "CS:CS"
+If ValorColuna = 98 Then Coluna = "CT:CT"
+If ValorColuna = 99 Then Coluna = "CU:CU"
+If ValorColuna = 100 Then Coluna = "CV:CV"
+If ValorColuna = 101 Then Coluna = "CW:CW"
+If ValorColuna = 102 Then Coluna = "CX:CX"
+If ValorColuna = 103 Then Coluna = "CY:CY"
+If ValorColuna = 104 Then Coluna = "CZ:CZ"
+If ValorColuna = 105 Then Coluna = "DA:DA"
+If ValorColuna = 106 Then Coluna = "DB:DB"
+If ValorColuna = 107 Then Coluna = "DC:DC"
+If ValorColuna = 108 Then Coluna = "DD:DD"
+If ValorColuna = 109 Then Coluna = "DE:DE"
+If ValorColuna = 110 Then Coluna = "DF:DF"
+If ValorColuna = 111 Then Coluna = "DG:DG"
+If ValorColuna = 112 Then Coluna = "DH:DH"
+If ValorColuna = 113 Then Coluna = "DI:DI"
+If ValorColuna = 114 Then Coluna = "DJ:DJ"
+If ValorColuna = 115 Then Coluna = "DK:DK"
+If ValorColuna = 116 Then Coluna = "DL:DL"
+If ValorColuna = 117 Then Coluna = "DM:DM"
+If ValorColuna = 118 Then Coluna = "DN:DN"
+If ValorColuna = 119 Then Coluna = "DO:DO"
+If ValorColuna = 120 Then Coluna = "DP:DP"
+If ValorColuna = 121 Then Coluna = "DQ:DQ"
+If ValorColuna = 122 Then Coluna = "DR:DR"
+If ValorColuna = 123 Then Coluna = "DS:DS"
+If ValorColuna = 124 Then Coluna = "DT:DT"
+If ValorColuna = 125 Then Coluna = "DU:DU"
+If ValorColuna = 126 Then Coluna = "DV:DV"
+If ValorColuna = 127 Then Coluna = "DW:DW"
+If ValorColuna = 128 Then Coluna = "DX:DX"
+If ValorColuna = 129 Then Coluna = "DY:DY"
+If ValorColuna = 130 Then Coluna = "DZ:DZ"
+If ValorColuna = 131 Then Coluna = "EA:EA"
+If ValorColuna = 132 Then Coluna = "EB:EB"
+If ValorColuna = 133 Then Coluna = "EC:EC"
+If ValorColuna = 134 Then Coluna = "ED:ED"
+If ValorColuna = 135 Then Coluna = "EE:EE"
+If ValorColuna = 136 Then Coluna = "EF:EF"
+If ValorColuna = 137 Then Coluna = "EG:EG"
+If ValorColuna = 138 Then Coluna = "EH:EH"
+If ValorColuna = 139 Then Coluna = "EI:EI"
+If ValorColuna = 140 Then Coluna = "EJ:EJ"
+If ValorColuna = 141 Then Coluna = "EK:EK"
+If ValorColuna = 142 Then Coluna = "EL:EL"
+If ValorColuna = 143 Then Coluna = "EM:EM"
+If ValorColuna = 144 Then Coluna = "EN:EN"
+If ValorColuna = 145 Then Coluna = "EO:EO"
+If ValorColuna = 146 Then Coluna = "EP:EP"
+If ValorColuna = 147 Then Coluna = "EQ:EQ"
+If ValorColuna = 148 Then Coluna = "ER:ER"
+If ValorColuna = 149 Then Coluna = "ES:ES"
+If ValorColuna = 150 Then Coluna = "ET:ET"
+If ValorColuna = 151 Then Coluna = "EU:EU"
+If ValorColuna = 152 Then Coluna = "EV:EV"
+If ValorColuna = 153 Then Coluna = "EW:EW"
+If ValorColuna = 154 Then Coluna = "EX:EX"
+If ValorColuna = 155 Then Coluna = "EY:EY"
+If ValorColuna = 156 Then Coluna = "EZ:EZ"
+If ValorColuna = 157 Then Coluna = "FA:FA"
+If ValorColuna = 158 Then Coluna = "FB:FB"
+If ValorColuna = 159 Then Coluna = "FC:FC"
+If ValorColuna = 160 Then Coluna = "FD:FD"
+If ValorColuna = 161 Then Coluna = "FE:FE"
+If ValorColuna = 162 Then Coluna = "FF:FF"
+If ValorColuna = 163 Then Coluna = "FG:FG"
+If ValorColuna = 164 Then Coluna = "FH:FH"
+If ValorColuna = 165 Then Coluna = "FI:FI"
+If ValorColuna = 166 Then Coluna = "FJ:FJ"
+If ValorColuna = 167 Then Coluna = "FK:FK"
+If ValorColuna = 168 Then Coluna = "FL:FL"
+If ValorColuna = 169 Then Coluna = "FM:FM"
+If ValorColuna = 170 Then Coluna = "FN:FN"
+If ValorColuna = 171 Then Coluna = "FO:FO"
+If ValorColuna = 172 Then Coluna = "FP:FP"
+If ValorColuna = 173 Then Coluna = "FQ:FQ"
+If ValorColuna = 174 Then Coluna = "FR:FR"
+If ValorColuna = 175 Then Coluna = "FS:FS"
+If ValorColuna = 176 Then Coluna = "FT:FT"
+If ValorColuna = 177 Then Coluna = "FU:FU"
+If ValorColuna = 178 Then Coluna = "FV:FV"
+If ValorColuna = 179 Then Coluna = "FW:FW"
+If ValorColuna = 180 Then Coluna = "FX:FX"
+If ValorColuna = 181 Then Coluna = "FY:FY"
+If ValorColuna = 182 Then Coluna = "FZ:FZ"
+If ValorColuna = 183 Then Coluna = "GA:GA"
+If ValorColuna = 184 Then Coluna = "GB:GB"
+If ValorColuna = 185 Then Coluna = "GC:GC"
+If ValorColuna = 186 Then Coluna = "GD:GD"
+If ValorColuna = 187 Then Coluna = "GE:GE"
+If ValorColuna = 188 Then Coluna = "GF:GF"
+If ValorColuna = 189 Then Coluna = "GG:GG"
+If ValorColuna = 190 Then Coluna = "GH:GH"
+If ValorColuna = 191 Then Coluna = "GI:GI"
+If ValorColuna = 192 Then Coluna = "GJ:GJ"
+If ValorColuna = 193 Then Coluna = "GK:GK"
+If ValorColuna = 194 Then Coluna = "GL:GL"
+If ValorColuna = 195 Then Coluna = "GM:GM"
+If ValorColuna = 196 Then Coluna = "GN:GN"
+If ValorColuna = 197 Then Coluna = "GO:GO"
+If ValorColuna = 198 Then Coluna = "GP:GP"
+If ValorColuna = 199 Then Coluna = "GQ:GQ"
+If ValorColuna = 200 Then Coluna = "GR:GR"
+If ValorColuna = 201 Then Coluna = "GS:GS"
+If ValorColuna = 202 Then Coluna = "GT:GT"
+If ValorColuna = 203 Then Coluna = "GU:GU"
+If ValorColuna = 204 Then Coluna = "GV:GV"
+If ValorColuna = 205 Then Coluna = "GW:GW"
+If ValorColuna = 206 Then Coluna = "GX:GX"
+If ValorColuna = 207 Then Coluna = "GY:GY"
+If ValorColuna = 208 Then Coluna = "GZ:GZ"
+If ValorColuna = 209 Then Coluna = "HA:HA"
+If ValorColuna = 210 Then Coluna = "HB:HB"
+
+End Function
+
+
