@@ -1,0 +1,52 @@
+/*
+Esta Query pega, em subquerys, os valores pagos para cada EGTTV por mês (do ano anterior) e consolida em uma tabela só, ordenado pelo valor total
+*/
+
+SELECT 
+
+TBL_EGTTV.NomeEGTTV, 
+CAST (CASE WHEN [ValorJAN] IS NULL THEN 0 ELSE [ValorJAN] END AS MONEY) AS VJAN, 
+CAST (CASE WHEN [ValorFEV] IS NULL THEN 0 ELSE [ValorFEV] END AS MONEY) AS VFEV, 
+CAST (CASE WHEN [ValorMAR] IS NULL THEN 0 ELSE [ValorMAR] END AS MONEY) AS VMAR, 
+CAST (CASE WHEN [ValorABR] IS NULL THEN 0 ELSE [ValorABR] END AS MONEY) AS VABR, 
+CAST (CASE WHEN [ValorMAI] IS NULL THEN 0 ELSE [ValorMAI] END AS MONEY) AS VMAI, 
+CAST (CASE WHEN [ValorJUN] IS NULL THEN 0 ELSE [ValorJUN] END AS MONEY) AS VJUN, 
+CAST (CASE WHEN [ValorJUL] IS NULL THEN 0 ELSE [ValorJUL] END AS MONEY) AS VJUL, 
+CAST (CASE WHEN [ValorAGO] IS NULL THEN 0 ELSE [ValorAGO] END AS MONEY) AS VAGO, 
+CAST (CASE WHEN [ValorSET] IS NULL THEN 0 ELSE [ValorSET] END AS MONEY) AS VSET, 
+CAST (CASE WHEN [ValorOUT] IS NULL THEN 0 ELSE [ValorOUT] END AS MONEY) AS VOUT, 
+CAST (CASE WHEN [ValorNOV] IS NULL THEN 0 ELSE [ValorNOV] END AS MONEY) AS VNOV, 
+CAST (CASE WHEN [ValorDEZ] IS NULL THEN 0 ELSE [ValorDEZ] END AS MONEY) AS VDEZ, 
+
+(CAST (CASE WHEN [ValorJAN] IS NULL THEN 0 ELSE [ValorJAN] END +CASE WHEN [ValorFEV] IS NULL THEN 0 ELSE [ValorFEV] END +CASE WHEN [ValorMAR] IS NULL THEN 0 ELSE [ValorMAR] END +CASE WHEN [ValorABR] IS NULL THEN 0 ELSE [ValorABR] END +CASE WHEN [ValorMAI] IS NULL THEN 0 ELSE [ValorMAI] END +CASE WHEN [ValorJUN] IS NULL THEN 0 ELSE [ValorJUN] END +CASE WHEN [ValorJUL] IS NULL THEN 0 ELSE [ValorJUL] END +CASE WHEN [ValorAGO] IS NULL THEN 0 ELSE [ValorAGO] END +CASE WHEN [ValorSET] IS NULL THEN 0 ELSE [ValorSET] END +CASE WHEN [ValorOUT] IS NULL THEN 0 ELSE [ValorOUT] END +CASE WHEN [ValorNOV] IS NULL THEN 0 ELSE [ValorNOV] END +CASE WHEN [ValorDEZ] IS NULL THEN 0 ELSE [ValorDEZ] END AS MONEY)) AS TOTAL
+
+
+FROM (((((((((((TBL_EGTTV LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorJAN FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='01') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS JANEIRO ON TBL_EGTTV.NomeEGTTV = JANEIRO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorFEV FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='02') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS FEVEREIRO ON TBL_EGTTV.NomeEGTTV = FEVEREIRO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorMAR FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='03') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS MARCO ON TBL_EGTTV.NomeEGTTV = MARCO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorABR FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='04') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS ABRIL ON TBL_EGTTV.NomeEGTTV = ABRIL.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorMAI FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='05') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS MAIO ON TBL_EGTTV.NomeEGTTV = MAIO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorJUN FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='06') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS JUNHO ON TBL_EGTTV.NomeEGTTV = JUNHO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorJUL FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='07') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS JULHO ON TBL_EGTTV.NomeEGTTV = JULHO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorAGO FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='08') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS AGOSTO ON TBL_EGTTV.NomeEGTTV = AGOSTO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorSET FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='09') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS SETEMBRO ON TBL_EGTTV.NomeEGTTV = SETEMBRO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorOUT FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='10') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS OUTUBRO ON TBL_EGTTV.NomeEGTTV = OUTUBRO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorNOV FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='11') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS NOVEMBRO ON TBL_EGTTV.NomeEGTTV = NOVEMBRO.NomeEGTTV) LEFT JOIN 
+
+(SELECT TBL_EGTTV.NomeEGTTV, Sum(TBL_Pagamentos.Valor) AS ValorDEZ FROM (TBL_Pagamentos RIGHT JOIN TBL_Contratos ON TBL_Pagamentos.Compromisso = TBL_Contratos.Compromisso) INNER JOIN TBL_EGTTV ON TBL_Contratos.CodEGTTV = TBL_EGTTV.CodEGTTV GROUP BY TBL_EGTTV.NomeEGTTV, TBL_Pagamentos.[MesPgto], TBL_Pagamentos.[AnoPgto] HAVING (((TBL_Pagamentos.MesPgto)='12') And ((TBL_Pagamentos.AnoPgto)=Year(GETDATE())-1)))  AS DEZEMBRO ON TBL_EGTTV.NomeEGTTV = DEZEMBRO.NomeEGTTV
+ORDER BY 
+
+(CAST (CASE WHEN [ValorJAN] IS NULL THEN 0 ELSE [ValorJAN] END +CASE WHEN [ValorFEV] IS NULL THEN 0 ELSE [ValorFEV] END +CASE WHEN [ValorMAR] IS NULL THEN 0 ELSE [ValorMAR] END +CASE WHEN [ValorABR] IS NULL THEN 0 ELSE [ValorABR] END +CASE WHEN [ValorMAI] IS NULL THEN 0 ELSE [ValorMAI] END +CASE WHEN [ValorJUN] IS NULL THEN 0 ELSE [ValorJUN] END +CASE WHEN [ValorJUL] IS NULL THEN 0 ELSE [ValorJUL] END +CASE WHEN [ValorAGO] IS NULL THEN 0 ELSE [ValorAGO] END +CASE WHEN [ValorSET] IS NULL THEN 0 ELSE [ValorSET] END +CASE WHEN [ValorOUT] IS NULL THEN 0 ELSE [ValorOUT] END +CASE WHEN [ValorNOV] IS NULL THEN 0 ELSE [ValorNOV] END +CASE WHEN [ValorDEZ] IS NULL THEN 0 ELSE [ValorDEZ] END AS MONEY))  DESC;
+
