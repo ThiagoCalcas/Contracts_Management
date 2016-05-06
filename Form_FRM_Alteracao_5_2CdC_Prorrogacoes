@@ -1,0 +1,49 @@
+Option Compare Database
+
+Private Sub Form_Load()
+'Permite alterar e incluir registros
+'(deveria ser automático, mas por algum motivo aleatório não permite
+'em alguns casos)
+Me.AllowAdditions = True
+Me.AllowEdits = True
+Me.AllowDeletions = True
+Call Ajuda("Oculta")
+
+End Sub
+
+Private Sub QuestionMark_Click() 'Se oculto, exibe os campos de Ajuda e vice-versa
+If Me.LinhaHelp1.Visible = False Then
+    Call Ajuda("Exibe")
+Else
+    Call Ajuda("Oculta")
+End If
+End Sub
+
+Private Sub Ajuda(OQueFazer As String)
+Dim VF As Boolean
+If OQueFazer = "Exibe" Then VF = True
+If OQueFazer = "Oculta" Then VF = False
+
+'Linhas e quadros de ajuda que vão aparecer ou ocultar
+Me.LinhaHelp1.Visible = VF
+Me.LinhaHelp2.Visible = VF
+Me.LinhaHelp3.Visible = VF
+Me.LinhaHelp4.Visible = VF
+Me.LinhaHelp5.Visible = VF
+Me.LinhaHelp6.Visible = VF
+Me.LinhaHelp7.Visible = VF
+Me.LinhaHelp8.Visible = VF
+Me.LinhaHelp9.Visible = VF
+Me.LinhaHelp10.Visible = VF
+Me.LinhaHelp11.Visible = VF
+Me.Help1.Visible = VF
+Me.Help2.Visible = VF
+Me.Help3.Visible = VF
+Me.Help4.Visible = VF
+Me.Help5.Visible = VF
+Me.Help6.Visible = VF
+Me.Help7.Visible = VF
+Me.Help8.Visible = VF
+Me.Help9.Visible = VF
+End Sub
+
